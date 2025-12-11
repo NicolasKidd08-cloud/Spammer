@@ -1,0 +1,297 @@
+-- Nexa Spammer - Steal a Brainrot Admin Tool
+-- Place this in StarterGui as a LocalScript
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NexaSpammer"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 350, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+-- Add UI Corner
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = MainFrame
+
+-- Add subtle gradient
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 40)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 25))
+}
+Gradient.Rotation = 45
+Gradient.Parent = MainFrame
+
+-- Title Bar
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 45)
+TitleBar.BackgroundColor3 = Color3.fromRGB(120, 40, 200)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+
+local TitleGradient = Instance.new("UIGradient")
+TitleGradient.Color = ColorSequence.new{
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(140, 60, 220)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 30, 180))
+}
+TitleGradient.Rotation = 90
+TitleGradient.Parent = TitleBar
+
+-- Title Text
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(1, -50, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "⚡ NEXA SPAMMER"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TitleBar
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 35, 0, 35)
+CloseButton.Position = UDim2.new(1, -40, 0, 5)
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 50, 80)
+CloseButton.Text = "✕"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 18
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Parent = TitleBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+-- Instructions
+local Instructions = Instance.new("TextLabel")
+Instructions.Size = UDim2.new(1, -30, 0, 40)
+Instructions.Position = UDim2.new(0, 15, 0, 55)
+Instructions.BackgroundTransparency = 1
+Instructions.Text = "Click any player to spam ALL commands!"
+Instructions.TextColor3 = Color3.fromRGB(200, 200, 255)
+Instructions.TextSize = 13
+Instructions.Font = Enum.Font.Gotham
+Instructions.TextWrapped = true
+Instructions.Parent = MainFrame
+
+-- Player List Frame
+local PlayerListFrame = Instance.new("ScrollingFrame")
+PlayerListFrame.Name = "PlayerListFrame"
+PlayerListFrame.Size = UDim2.new(1, -30, 1, -110)
+PlayerListFrame.Position = UDim2.new(0, 15, 0, 95)
+PlayerListFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+PlayerListFrame.BorderSizePixel = 0
+PlayerListFrame.ScrollBarThickness = 8
+PlayerListFrame.ScrollBarImageColor3 = Color3.fromRGB(120, 40, 200)
+PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+PlayerListFrame.Parent = MainFrame
+
+local ListCorner = Instance.new("UICorner")
+ListCorner.CornerRadius = UDim.new(0, 10)
+ListCorner.Parent = PlayerListFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.Name
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = PlayerListFrame
+
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingTop = UDim.new(0, 8)
+UIPadding.PaddingBottom = UDim.new(0, 8)
+UIPadding.PaddingLeft = UDim.new(0, 8)
+UIPadding.PaddingRight = UDim.new(0, 8)
+UIPadding.Parent = PlayerListFrame
+
+-- All commands to spam
+local commandsList = {
+	";rocket",
+	";ragdoll",
+	";balloon",
+	";tiny",
+	";jail",
+	";inverse",
+	";morph"
+}
+
+-- Function to spam all commands on a player
+local function spamCommands(playerName)
+	-- Execute all commands with small delays
+	for i, cmd in ipairs(commandsList) do
+		task.spawn(function()
+			wait((i - 1) * 0.1) -- Stagger commands slightly
+			local fullCommand = cmd .. " " .. playerName
+			game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(fullCommand, "All")
+		end)
+	end
+end
+
+-- Function to create player button
+local function createPlayerButton(player)
+	if player == LocalPlayer then return end
+	
+	local PlayerButton = Instance.new("TextButton")
+	PlayerButton.Name = player.Name
+	PlayerButton.Size = UDim2.new(1, -16, 0, 45)
+	PlayerButton.BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+	PlayerButton.AutoButtonColor = false
+	PlayerButton.Text = ""
+	PlayerButton.Parent = PlayerListFrame
+	
+	local PBCorner = Instance.new("UICorner")
+	PBCorner.CornerRadius = UDim.new(0, 8)
+	PBCorner.Parent = PlayerButton
+	
+	-- Player name label
+	local NameLabel = Instance.new("TextLabel")
+	NameLabel.Size = UDim2.new(1, -50, 1, 0)
+	NameLabel.Position = UDim2.new(0, 50, 0, 0)
+	NameLabel.BackgroundTransparency = 1
+	NameLabel.Text = player.Name
+	NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	NameLabel.TextSize = 15
+	NameLabel.Font = Enum.Font.GothamBold
+	NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	NameLabel.Parent = PlayerButton
+	
+	-- Player thumbnail
+	local Thumbnail = Instance.new("ImageLabel")
+	Thumbnail.Size = UDim2.new(0, 35, 0, 35)
+	Thumbnail.Position = UDim2.new(0, 5, 0.5, -17.5)
+	Thumbnail.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+	Thumbnail.BorderSizePixel = 0
+	Thumbnail.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+	Thumbnail.Parent = PlayerButton
+	
+	local ThumbCorner = Instance.new("UICorner")
+	ThumbCorner.CornerRadius = UDim.new(1, 0)
+	ThumbCorner.Parent = Thumbnail
+	
+	-- Spam icon
+	local SpamIcon = Instance.new("TextLabel")
+	SpamIcon.Size = UDim2.new(0, 40, 1, 0)
+	SpamIcon.Position = UDim2.new(1, -45, 0, 0)
+	SpamIcon.BackgroundTransparency = 1
+	SpamIcon.Text = "⚡"
+	SpamIcon.TextColor3 = Color3.fromRGB(255, 200, 50)
+	SpamIcon.TextSize = 20
+	SpamIcon.Font = Enum.Font.GothamBold
+	SpamIcon.Parent = PlayerButton
+	
+	-- Hover effect
+	PlayerButton.MouseEnter:Connect(function()
+		game:GetService("TweenService"):Create(PlayerButton, TweenInfo.new(0.2), {
+			BackgroundColor3 = Color3.fromRGB(120, 40, 200)
+		}):Play()
+	end)
+	
+	PlayerButton.MouseLeave:Connect(function()
+		game:GetService("TweenService"):Create(PlayerButton, TweenInfo.new(0.2), {
+			BackgroundColor3 = Color3.fromRGB(50, 50, 70)
+		}):Play()
+	end)
+	
+	-- Click to spam all commands
+	PlayerButton.MouseButton1Click:Connect(function()
+		spamCommands(player.Name)
+	end)
+	
+	return PlayerButton
+end
+
+-- Function to update player list
+local function updatePlayerList()
+	-- Clear existing buttons
+	for _, child in pairs(PlayerListFrame:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	
+	-- Add all players
+	for _, player in pairs(Players:GetPlayers()) do
+		createPlayerButton(player)
+	end
+	
+	-- Update canvas size
+	PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 16)
+end
+
+-- Initial player list
+updatePlayerList()
+
+-- Update when players join/leave
+Players.PlayerAdded:Connect(function(player)
+	wait(0.1)
+	updatePlayerList()
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	updatePlayerList()
+end)
+
+-- Update canvas size when layout changes
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 16)
+end)
+
+-- Close button functionality
+CloseButton.MouseButton1Click:Connect(function()
+	MainFrame.Visible = not MainFrame.Visible
+end)
+
+-- Make draggable
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+TitleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+TitleBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
