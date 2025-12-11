@@ -148,11 +148,45 @@ local isMinimized = false
 
 -- Function to spam all commands on a player
 local function spamCommands(playerName)
+	-- Use TextChatService (new chat system) or legacy chat
+	local TextChatService = game:GetService("TextChatService")
+	local Players = game:GetService("Players")
+	
 	for i, cmd in ipairs(commandsList) do
 		task.spawn(function()
-			wait((i - 1) * 0.1)
+			task.wait((i - 1) * 0.15)
 			local fullCommand = cmd .. " " .. playerName
-			game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(fullCommand, "All")
+			
+			-- Try TextChatService first (new Roblox chat)
+			pcall(function()
+				local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+				if channel then
+					channel:SendAsync(fullCommand)
+				end
+			end)
+			
+			-- Try legacy chat method
+			pcall(function()
+				local args = {
+					[1] = fullCommand,
+					[2] = "All"
+				}
+				game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents"):FindFirstChild("SayMessageRequest"):FireServer(unpack(args))
+			end)
+			
+			-- Try direct player chat
+			pcall(function()
+				Players.LocalPlayer:Chat(fullCommand)
+			end)
+			
+			-- Try game-specific remote (common in custom admin systems)
+			pcall(function()
+				for _, remote in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+					if remote:IsA("RemoteEvent") and (remote.Name:lower():find("chat") or remote.Name:lower():find("command")) then
+						remote:FireServer(fullCommand)
+					end
+				end
+			end)
 		end)
 	end
 end
