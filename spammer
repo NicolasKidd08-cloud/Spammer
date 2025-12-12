@@ -1,4 +1,45 @@
--- Nexa Spammer - Steal a Brainrot Admin Tool
+-- Function to update cooldown display
+local function updateCooldownDisplay()
+	local anyOnCooldown = false
+	
+	for cmd, timeLeft in pairs(commandCooldowns) do
+		if timeLeft > 0 then
+			anyOnCooldown = true
+			local label = cooldownLabels[cmd]
+			if label then
+				label.timer.Text = string.format("%ds", math.ceil(timeLeft))
+				label.timer.TextColor3 = Color3.fromRGB(255, 255, 255)
+				label.frame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				label.icon.TextColor3 = Color3.fromRGB(150, 150, 150)
+			end
+		else
+			local label = cooldownLabels[cmd]
+			if label then
+				label.timer.Text = "Ready"
+				label.timer.TextColor3 = Color3.fromRGB(100, 255, 100)
+				label.frame.BackgroundColor3 = Color3.fromRGB(30, 60, 40)
+				label.icon.TextColor3 = Color3.fromRGB(100, 255, 100)
+			end
+		end
+	end
+	
+	if cooldownEnabled then
+		CooldownDisplay.Visible = true
+	end
+end
+
+-- Cooldown countdown loop
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		for cmd, timeLeft in pairs(commandCooldowns) do
+			if timeLeft > 0 then
+				commandCooldowns[cmd] = math.max(0, timeLeft - 0.1)
+			end
+		end
+		updateCooldownDisplay()
+	end
+end)-- Nexa Spammer - Steal a Brainrot Admin Tool
 -- Place this in StarterGui as a LocalScript
 
 local Players = game:GetService("Players")
@@ -109,6 +150,7 @@ ToggleCorner.Parent = ToggleFrame
 local espEnabled = true
 local jailInverseMode = false
 local rocketBalloonMode = false
+local cooldownEnabled = false
 
 -- Function to create toggle button
 local function createToggleButton(name, position, toggleVar)
@@ -195,15 +237,36 @@ local commandsList = {
 }
 
 -- Cooldown system
-local onCooldown = false
-local cooldownTime = 3
+local commandCooldowns = {
+	[";rocket"] = 0,
+	[";ragdoll"] = 0,
+	[";balloon"] = 0,
+	[";tiny"] = 0,
+	[";jail"] = 0,
+	[";inverse"] = 0,
+	[";morph"] = 0,
+	[";jumpscare"] = 0,
+	[";nightvision"] = 0
+}
+
+local commandCooldownTimes = {
+	[";rocket"] = 1,
+	[";ragdoll"] = 0.5,
+	[";balloon"] = 0.3,
+	[";tiny"] = 0.5,
+	[";jail"] = 0.5,
+	[";inverse"] = 0.5,
+	[";morph"] = 0.5,
+	[";jumpscare"] = 0.5,
+	[";nightvision"] = 0.5
+}
 
 -- Cooldown display (movable, positioned in corner)
 local CooldownDisplay = Instance.new("Frame")
 CooldownDisplay.Name = "CooldownDisplay"
-CooldownDisplay.Size = UDim2.new(0, 150, 0, 60)
-CooldownDisplay.Position = UDim2.new(1, -160, 1, -70)
-CooldownDisplay.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+CooldownDisplay.Size = UDim2.new(0, 320, 0, 280)
+CooldownDisplay.Position = UDim2.new(1, -330, 0.5, -140)
+CooldownDisplay.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 CooldownDisplay.BorderSizePixel = 0
 CooldownDisplay.Visible = false
 CooldownDisplay.Parent = ScreenGui
@@ -212,33 +275,100 @@ local CDCorner = Instance.new("UICorner")
 CDCorner.CornerRadius = UDim.new(0, 10)
 CDCorner.Parent = CooldownDisplay
 
-local CDGradient = Instance.new("UIGradient")
-CDGradient.Color = ColorSequence.new{
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(140, 60, 220)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(100, 30, 180))
+local CDTitle = Instance.new("TextLabel")
+CDTitle.Size = UDim2.new(1, -10, 0, 30)
+CDTitle.Position = UDim2.new(0, 5, 0, 5)
+CDTitle.BackgroundTransparency = 1
+CDTitle.Text = "Command Cooldowns"
+CDTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+CDTitle.TextSize = 16
+CDTitle.Font = Enum.Font.GothamBold
+CDTitle.Parent = CooldownDisplay
+
+local CDGrid = Instance.new("Frame")
+CDGrid.Size = UDim2.new(1, -20, 1, -45)
+CDGrid.Position = UDim2.new(0, 10, 0, 40)
+CDGrid.BackgroundTransparency = 1
+CDGrid.Parent = CooldownDisplay
+
+local CDGridLayout = Instance.new("UIGridLayout")
+CDGridLayout.CellSize = UDim2.new(0, 145, 0, 50)
+CDGridLayout.CellPadding = UDim2.new(0, 10, 0, 8)
+CDGridLayout.SortOrder = Enum.SortOrder.Name
+CDGridLayout.Parent = CDGrid
+
+-- Command icons (emoji style)
+local commandIcons = {
+	[";rocket"] = "🚀",
+	[";ragdoll"] = "🤸",
+	[";balloon"] = "🎈",
+	[";tiny"] = "🔬",
+	[";jail"] = "🔒",
+	[";inverse"] = "🔄",
+	[";morph"] = "👤",
+	[";jumpscare"] = "👻",
+	[";nightvision"] = "👁️"
 }
-CDGradient.Rotation = 45
-CDGradient.Parent = CooldownDisplay
 
-local CDText = Instance.new("TextLabel")
-CDText.Size = UDim2.new(1, -10, 0, 25)
-CDText.Position = UDim2.new(0, 5, 0, 5)
-CDText.BackgroundTransparency = 1
-CDText.Text = "COOLDOWN"
-CDText.TextColor3 = Color3.fromRGB(255, 255, 255)
-CDText.TextSize = 14
-CDText.Font = Enum.Font.GothamBold
-CDText.Parent = CooldownDisplay
+-- Create cooldown labels for each command
+local cooldownLabels = {}
 
-local CDTimer = Instance.new("TextLabel")
-CDTimer.Size = UDim2.new(1, -10, 0, 25)
-CDTimer.Position = UDim2.new(0, 5, 0, 30)
-CDTimer.BackgroundTransparency = 1
-CDTimer.Text = "3.0s"
-CDTimer.TextColor3 = Color3.fromRGB(255, 100, 100)
-CDTimer.TextSize = 18
-CDTimer.Font = Enum.Font.GothamBold
-CDTimer.Parent = CooldownDisplay
+for cmd, _ in pairs(commandCooldowns) do
+	local cmdName = cmd:gsub(";", "")
+	
+	local CmdFrame = Instance.new("Frame")
+	CmdFrame.Name = cmdName
+	CmdFrame.Size = UDim2.new(1, 0, 1, 0)
+	CmdFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+	CmdFrame.BorderSizePixel = 0
+	CmdFrame.Parent = CDGrid
+	
+	local CmdCorner = Instance.new("UICorner")
+	CmdCorner.CornerRadius = UDim.new(0, 8)
+	CmdCorner.Parent = CmdFrame
+	
+	-- Icon
+	local Icon = Instance.new("TextLabel")
+	Icon.Size = UDim2.new(0, 35, 0, 35)
+	Icon.Position = UDim2.new(0, 8, 0.5, -17.5)
+	Icon.BackgroundTransparency = 1
+	Icon.Text = commandIcons[cmd] or "⚡"
+	Icon.TextColor3 = Color3.fromRGB(200, 200, 200)
+	Icon.TextSize = 24
+	Icon.Font = Enum.Font.GothamBold
+	Icon.Parent = CmdFrame
+	
+	-- Command name
+	local CmdLabel = Instance.new("TextLabel")
+	CmdLabel.Size = UDim2.new(1, -100, 0, 20)
+	CmdLabel.Position = UDim2.new(0, 48, 0, 8)
+	CmdLabel.BackgroundTransparency = 1
+	CmdLabel.Text = cmdName
+	CmdLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+	CmdLabel.TextSize = 13
+	CmdLabel.Font = Enum.Font.GothamBold
+	CmdLabel.TextXAlignment = Enum.TextXAlignment.Left
+	CmdLabel.Parent = CmdFrame
+	
+	-- Timer label
+	local TimerLabel = Instance.new("TextLabel")
+	TimerLabel.Size = UDim2.new(0, 60, 0, 25)
+	TimerLabel.Position = UDim2.new(1, -68, 0.5, -12.5)
+	TimerLabel.BackgroundTransparency = 1
+	TimerLabel.Text = "Ready"
+	TimerLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+	TimerLabel.TextSize = 16
+	TimerLabel.Font = Enum.Font.GothamBold
+	TimerLabel.TextXAlignment = Enum.TextXAlignment.Right
+	TimerLabel.Parent = CmdFrame
+	
+	cooldownLabels[cmd] = {
+		frame = CmdFrame,
+		timer = TimerLabel,
+		icon = Icon,
+		label = CmdLabel
+	}
+end
 
 -- Make cooldown display draggable
 local cdDragging = false
@@ -374,17 +504,19 @@ RocketButton.MouseButton1Click:Connect(function()
 end)
 
 CooldownButton.MouseButton1Click:Connect(function()
-	local enabled = CooldownButton.BackgroundColor3 == Color3.fromRGB(180, 70, 70)
-	CooldownButton.BackgroundColor3 = enabled and Color3.fromRGB(70, 180, 130) or Color3.fromRGB(180, 70, 70)
+	cooldownEnabled = not cooldownEnabled
+	CooldownButton.BackgroundColor3 = cooldownEnabled and Color3.fromRGB(70, 180, 130) or Color3.fromRGB(180, 70, 70)
+	
+	-- Show/hide cooldown display
+	if cooldownEnabled then
+		updateCooldownDisplay()
+	else
+		CooldownDisplay.Visible = false
+	end
 end)
 
 -- Function to spam all commands on a player
 local function spamCommands(playerName)
-	-- Check cooldown
-	if onCooldown and CooldownButton.BackgroundColor3 == Color3.fromRGB(70, 180, 130) then
-		return -- Don't execute if on cooldown and cooldown is enabled
-	end
-	
 	-- Use TextChatService (new chat system) or legacy chat
 	local TextChatService = game:GetService("TextChatService")
 	local Players = game:GetService("Players")
@@ -399,12 +531,17 @@ local function spamCommands(playerName)
 		-- Only rocket and balloon
 		cmdsToUse = {";rocket", ";balloon", ";rocket", ";balloon", ";rocket"}
 	else
-		-- All commands
+		-- All commands including jumpscare
 		cmdsToUse = commandsList
 	end
 	
 	for i, cmd in ipairs(cmdsToUse) do
 		task.spawn(function()
+			-- Check if command is on cooldown
+			if cooldownEnabled and commandCooldowns[cmd] and commandCooldowns[cmd] > 0 then
+				return -- Skip this command if on cooldown
+			end
+			
 			task.wait((i - 1) * 0.001)
 			local fullCommand = cmd .. " " .. playerName
 			
@@ -438,6 +575,12 @@ local function spamCommands(playerName)
 					end
 				end
 			end)
+			
+			-- Start cooldown for this command
+			if cooldownEnabled and commandCooldowns[cmd] then
+				commandCooldowns[cmd] = commandCooldownTimes[cmd]
+				updateCooldownDisplay()
+			end
 		end)
 	end
 	
@@ -445,6 +588,10 @@ local function spamCommands(playerName)
 	if not jailInverseMode and not rocketBalloonMode then
 		for i = 1, 5 do
 			task.spawn(function()
+				if cooldownEnabled and commandCooldowns[";rocket"] and commandCooldowns[";rocket"] > 0 then
+					return
+				end
+				
 				task.wait(0.001 * i)
 				local rocketCmd = ";rocket " .. playerName
 				
@@ -460,22 +607,51 @@ local function spamCommands(playerName)
 				end)
 			end)
 		end
-	end
-	
-	-- Start cooldown if enabled
-	if CooldownButton.BackgroundColor3 == Color3.fromRGB(70, 180, 130) then
-		onCooldown = true
-		CooldownDisplay.Visible = true
 		
-		local timeLeft = cooldownTime
-		while timeLeft > 0 do
-			CDTimer.Text = string.format("%.1fs", timeLeft)
-			task.wait(0.1)
-			timeLeft = timeLeft - 0.1
+		-- Extra jumpscares and balloons
+		for i = 1, 3 do
+			task.spawn(function()
+				if cooldownEnabled and commandCooldowns[";jumpscare"] and commandCooldowns[";jumpscare"] > 0 then
+					return
+				end
+				
+				task.wait(0.001 * (i + 5))
+				local jumpscareCmd = ";jumpscare " .. playerName
+				
+				pcall(function()
+					local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+					if channel then
+						channel:SendAsync(jumpscareCmd)
+					end
+				end)
+				
+				pcall(function()
+					Players.LocalPlayer:Chat(jumpscareCmd)
+				end)
+			end)
 		end
 		
-		onCooldown = false
-		CooldownDisplay.Visible = false
+		for i = 1, 3 do
+			task.spawn(function()
+				if cooldownEnabled and commandCooldowns[";balloon"] and commandCooldowns[";balloon"] > 0 then
+					return
+				end
+				
+				task.wait(0.001 * (i + 8))
+				local balloonCmd = ";balloon " .. playerName
+				
+				pcall(function()
+					local channel = TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+					if channel then
+						channel:SendAsync(balloonCmd)
+					end
+				end)
+				
+				pcall(function()
+					Players.LocalPlayer:Chat(balloonCmd)
+				end)
+			end)
+		end
 	end
 end
 
