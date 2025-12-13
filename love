@@ -1,7 +1,7 @@
 --[[
-    Nexa Hub v1.0 - Steal a Brainrot Edition
+    Nexa Hub v2.0 - Steal a Brainrot (WORKING)
     Modern Green Theme
-    Game: Steal a Brainrot
+    Game: Steal a Brainrot by SpyderSammy
 ]]
 
 -- ============================================================
@@ -12,36 +12,30 @@ getgenv().NEXA_CONFIG = getgenv().NEXA_CONFIG or {
     TELEPORT_KEYBIND = Enum.KeyCode.T,
     TOGGLE_GUI_KEYBIND = Enum.KeyCode.RightControl,
     SPEED_KEYBIND = Enum.KeyCode.G,
+    DESYNC_KEYBIND = Enum.KeyCode.X,
     AUTO_FARM_KEYBIND = Enum.KeyCode.F,
     
+    AUTO_BUY_BRAINROT = false,
     AUTO_STEAL_ENABLED = false,
-    AUTO_STEAL_NEAREST_ENABLED = false,
-    AUTO_STEAL_BEST_VALUE = false,
-    SPEED_BOOST_ENABLED = false,
-    AUTO_LOCK_BASE = false,
-    AUTO_BUY_ITEMS = false,
+    AUTO_DEFEND_BASE = false,
     AUTO_COLLECT_MONEY = false,
+    SPEED_BOOST_ENABLED = false,
+    DESYNC_ENABLED = false,
+    NO_SLOWDOWN = false,
+    ANTI_STEAL = false,
     
     ESP_ENABLED = false,
-    ESP_SHOW_VALUE = true,
-    ESP_SHOW_OWNER = true,
+    ESP_SHOW_BASES = true,
+    ESP_SHOW_PLAYERS = false,
     
-    ANTI_STUN_ENABLED = false,
-    WALK_SPEED = 16,
+    WALK_SPEED = 50,
+    AUTO_BUY_DELAY = 0.5,
     
     GUI_POSITION_X = nil,
     GUI_POSITION_Y = nil,
 }
 
-getgenv().NEXA_FAVORITES = getgenv().NEXA_FAVORITES or {}
-
 local CONFIG = getgenv().NEXA_CONFIG
-local FAVORITES = getgenv().NEXA_FAVORITES
-
-local PRIORITY_BRAINROTS = {
-    "Brainrot God", "Strawberry Elephant", "Smurf Cat", 
-    "Pineapple Owl", "Dragon Cannelloni", "Capitano Moby"
-}
 
 -- ============================================================
 -- COLORS - MODERN GREEN THEME
@@ -83,18 +77,15 @@ S.PlayerGui = S.LocalPlayer:WaitForChild("PlayerGui")
 -- ============================================================
 
 local screenGui, mainFrame, contentFrame
-local allBrainrotsCache = {}
 local guiVisible = true
 local statLabels = nil
 local ESP_INSTANCES = {}
-local stealConnection = nil
-local speedConnection = nil
+local connections = {}
 
 local stats = {
-    totalBrainrots = 0,
-    totalValue = 0,
-    myBrainrots = 0,
-    myValue = 0,
+    totalMoney = 0,
+    brainrotsOwned = 0,
+    brainrotsStolen = 0,
 }
 
 -- ============================================================
@@ -165,14 +156,7 @@ function showNotification(message, color)
     })
     
     createElement("UICorner", {CornerRadius = UDim.new(0, 10), Parent = notif})
-    
-    createElement("UIStroke", {
-        Color = color,
-        Thickness = 2,
-        Transparency = 0.3,
-        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-        Parent = notif,
-    })
+    createElement("UIStroke", {Color = color, Thickness = 2, Transparency = 0.3, Parent = notif})
     
     local bar = createElement("Frame", {
         Size = UDim2.new(0, 4, 1, 0),
@@ -180,7 +164,6 @@ function showNotification(message, color)
         BorderSizePixel = 0,
         Parent = notif,
     })
-    
     createElement("UICorner", {CornerRadius = UDim.new(1, 0), Parent = bar})
     
     createElement("TextLabel", {
@@ -196,29 +179,7 @@ function showNotification(message, color)
         Parent = notif,
     })
     
-    local closeBtn = createElement("TextButton", {
-        Size = UDim2.new(0, 30, 0, 30),
-        Position = UDim2.new(1, -35, 0.5, -15),
-        BackgroundTransparency = 1,
-        Text = "×",
-        TextColor3 = COLORS.TextDim,
-        TextSize = 18,
-        Font = Enum.Font.GothamBold,
-        Parent = notif,
-    })
-    
-    closeBtn.MouseButton1Click:Connect(function()
-        notif:Destroy()
-        for i, n in ipairs(NOTIFICATIONS) do
-            if n == notif then
-                table.remove(NOTIFICATIONS, i)
-                break
-            end
-        end
-    end)
-    
     table.insert(NOTIFICATIONS, notif)
-    
     tween(notif, {Position = UDim2.new(1, -330, 1, -70 - ((#NOTIFICATIONS - 1) * 70))})
     
     task.delay(3, function()
@@ -227,10 +188,7 @@ function showNotification(message, color)
             task.wait(0.5)
             notif:Destroy()
             for i, n in ipairs(NOTIFICATIONS) do
-                if n == notif then
-                    table.remove(NOTIFICATIONS, i)
-                    break
-                end
+                if n == notif then table.remove(NOTIFICATIONS, i) break end
             end
         end
     end)
@@ -250,9 +208,7 @@ local function saveConfig()
         end
     end
     local ok, json = pcall(S.HttpService.JSONEncode, S.HttpService, data)
-    if ok then
-        writefile("NexaBrainrotConfig.json", json)
-    end
+    if ok then writefile("NexaBrainrotConfig.json", json) end
 end
 
 local function loadConfig()
@@ -262,10 +218,8 @@ local function loadConfig()
     local ok2, data = pcall(S.HttpService.JSONDecode, S.HttpService, json)
     if ok2 and data then
         for k, v in pairs(data) do
-            if type(v) == "table" and v._enum then
-                if v._type == "KeyCode" then
-                    CONFIG[k] = Enum.KeyCode[v._name]
-                end
+            if type(v) == "table" and v._enum and v._type == "KeyCode" then
+                CONFIG[k] = Enum.KeyCode[v._name]
             else
                 CONFIG[k] = v
             end
@@ -274,7 +228,7 @@ local function loadConfig()
 end
 
 -- ============================================================
--- GAME DETECTION
+-- GAME HELPERS
 -- ============================================================
 
 local function getHRP()
@@ -284,73 +238,178 @@ local function getHRP()
 end
 
 local function getMyBase()
-    local bases = workspace:FindFirstChild("Bases")
+    local bases = S.Workspace:FindFirstChild("Bases")
     if not bases then return nil end
     return bases:FindFirstChild(S.LocalPlayer.Name)
 end
 
-local function scanBrainrots()
-    allBrainrotsCache = {}
-    stats = {
-        totalBrainrots = 0,
-        totalValue = 0,
-        myBrainrots = 0,
-        myValue = 0,
-    }
+local function findConveyor()
+    return S.Workspace:FindFirstChild("Conveyor") or S.Workspace:FindFirstChild("ConveyorBelt")
+end
+
+-- ============================================================
+-- DESYNC SYSTEM
+-- ============================================================
+
+local function enableDesync()
+    pcall(function() setfflag("LargeReplicatorEnabled9", "true") end)
+    pcall(function() setfflag("GameNetDontSendRedundantNumTimes", "1") end)
+    pcall(function() setfflag("MaxTimestepMultiplierAcceleration", "2147483647") end)
     
-    local bases = workspace:FindFirstChild("Bases")
-    if not bases then return end
+    if connections.desync then connections.desync:Disconnect() end
     
-    for _, base in ipairs(bases:GetChildren()) do
-        if base:IsA("Model") or base:IsA("Folder") then
-            local owner = base.Name
-            local isMyBase = (owner == S.LocalPlayer.Name)
-            
-            for _, child in ipairs(base:GetDescendants()) do
-                if child:IsA("Model") and child:FindFirstChild("Humanoid") then
-                    local brainrotName = child.Name
-                    local value = 0
-                    
-                    -- Try to estimate value based on name patterns
-                    if brainrotName:find("God") then value = 1000000
-                    elseif brainrotName:find("Elephant") then value = 500000
-                    elseif brainrotName:find("Cat") then value = 300000
-                    elseif brainrotName:find("Dragon") then value = 400000
-                    else value = 100 end
-                    
-                    local data = {
-                        name = brainrotName,
-                        value = value,
-                        owner = owner,
-                        isMyBase = isMyBase,
-                        model = child,
-                        position = child:GetPivot().Position,
-                    }
-                    
-                    table.insert(allBrainrotsCache, data)
-                    
-                    stats.totalBrainrots = stats.totalBrainrots + 1
-                    stats.totalValue = stats.totalValue + value
-                    
-                    if isMyBase then
-                        stats.myBrainrots = stats.myBrainrots + 1
-                        stats.myValue = stats.myValue + value
-                    end
-                end
-            end
+    connections.desync = S.RunService.Heartbeat:Connect(function()
+        if not CONFIG.DESYNC_ENABLED then return end
+        local hrp = getHRP()
+        if hrp then
+            pcall(function()
+                hrp.Velocity = Vector3.new(0, 0, 0)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end)
         end
-    end
-    
-    table.sort(allBrainrotsCache, function(a, b)
-        return a.value > b.value
     end)
     
-    if statLabels then
-        statLabels.total.Text = tostring(stats.totalBrainrots)
-        statLabels.value.Text = "$" .. tostring(stats.totalValue) .. "/s"
-        statLabels.mine.Text = tostring(stats.myBrainrots)
-        statLabels.myValue.Text = "$" .. tostring(stats.myValue) .. "/s"
-    end
+    showNotification("✓ Desync V3 Enabled", COLORS.Success)
+end
+
+local function disableDesync()
+    if connections.desync then connections.desync:Disconnect() end
+    showNotification("✗ Desync Disabled", COLORS.Warning)
+end
+
+-- ============================================================
+-- SPEED BOOST
+-- ============================================================
+
+local function enableSpeedBoost()
+    if connections.speed then connections.speed:Disconnect() end
+    
+    connections.speed = S.RunService.Heartbeat:Connect(function()
+        if not CONFIG.SPEED_BOOST_ENABLED then return end
+        
+        local char = S.LocalPlayer.Character
+        if not char then return end
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = CONFIG.WALK_SPEED
+        end
+    end)
+end
+
+-- ============================================================
+-- NO SLOWDOWN
+-- ============================================================
+
+local function enableNoSlowdown()
+    if connections.noSlow then connections.noSlow:Disconnect() end
+    
+    connections.noSlow = S.RunService.Heartbeat:Connect(function()
+        if not CONFIG.NO_SLOWDOWN then return end
+        
+        local char = S.LocalPlayer.Character
+        if not char then return end
+        
+        -- Remove any "Stolen" or slowdown effects
+        for _, v in ipairs(char:GetDescendants()) do
+            if v:IsA("BodyVelocity") or v:IsA("BodyPosition") then
+                v:Destroy()
+            end
+        end
+    end)
+end
+
+-- ============================================================
+-- AUTO BUY BRAINROT
+-- ============================================================
+
+local function autoBuyBrainrot()
+    task.spawn(function()
+        while task.wait(CONFIG.AUTO_BUY_DELAY) do
+            if not CONFIG.AUTO_BUY_BRAINROT then break end
+            
+            pcall(function()
+                local conveyor = findConveyor()
+                if conveyor then
+                    local button = conveyor:FindFirstChild("Button") or conveyor:FindFirstChild("BuyButton")
+                    if button then
+                        local clickDetector = button:FindFirstChildOfClass("ClickDetector")
+                        if clickDetector then
+                            fireclickdetector(clickDetector)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- ============================================================
+-- AUTO DEFEND BASE
+-- ============================================================
+
+local function autoDefendBase()
+    task.spawn(function()
+        while task.wait(59) do
+            if not CONFIG.AUTO_DEFEND_BASE then break end
+            
+            pcall(function()
+                local myBase = getMyBase()
+                if myBase then
+                    local lockButton = myBase:FindFirstChild("LockButton") or myBase:FindFirstChild("Button")
+                    if lockButton then
+                        local clickDetector = lockButton:FindFirstChildOfClass("ClickDetector")
+                        if clickDetector then
+                            fireclickdetector(clickDetector)
+                            showNotification("🛡️ Base Locked", COLORS.Success)
+                        end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+-- ============================================================
+-- AUTO STEAL
+-- ============================================================
+
+local function autoSteal()
+    task.spawn(function()
+        while task.wait(0.1) do
+            if not CONFIG.AUTO_STEAL_ENABLED then break end
+            
+            pcall(function()
+                local hrp = getHRP()
+                if not hrp then return end
+                
+                local bases = S.Workspace:FindFirstChild("Bases")
+                if not bases then return end
+                
+                for _, base in ipairs(bases:GetChildren()) do
+                    if base.Name ~= S.LocalPlayer.Name then
+                        for _, brainrot in ipairs(base:GetDescendants()) do
+                            if brainrot:IsA("Model") and brainrot:FindFirstChild("Humanoid") then
+                                local prompt = brainrot:FindFirstChildOfClass("ProximityPrompt", true)
+                                if prompt and prompt.Enabled then
+                                    hrp.CFrame = brainrot:GetPivot()
+                                    task.wait(0.1)
+                                    fireproximityprompt(prompt)
+                                    task.wait(0.5)
+                                    
+                                    -- TP back to your base
+                                    local myBase = getMyBase()
+                                    if myBase then
+                                        hrp.CFrame = myBase:GetPivot() + Vector3.new(0, 5, 0)
+                                    end
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end)
 end
 
 -- ============================================================
@@ -370,184 +429,24 @@ local function refreshESP()
     
     if not CONFIG.ESP_ENABLED or not screenGui then return end
     
-    for _, brainrot in ipairs(allBrainrotsCache) do
-        if brainrot.isMyBase then continue end
-        if not brainrot.model or not brainrot.model.Parent then continue end
-        
-        local highlight = Instance.new("Highlight")
-        highlight.Adornee = brainrot.model
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlight.FillTransparency = 0.7
-        highlight.FillColor = COLORS.Green
-        highlight.OutlineTransparency = 0.3
-        highlight.OutlineColor = COLORS.Cyan
-        highlight.Parent = screenGui
-        
-        local bb = Instance.new("BillboardGui")
-        bb.Adornee = brainrot.model
-        bb.AlwaysOnTop = true
-        bb.Size = UDim2.new(0, 150, 0, 50)
-        bb.StudsOffset = Vector3.new(0, 3, 0)
-        bb.Parent = screenGui
-        
-        local frame = createElement("Frame", {
-            Size = UDim2.new(1, 0, 1, 0),
-            BackgroundColor3 = COLORS.Surface,
-            BackgroundTransparency = 0.2,
-            BorderSizePixel = 0,
-            Parent = bb,
-        })
-        
-        createElement("UICorner", {CornerRadius = UDim.new(0, 8), Parent = frame})
-        
-        local nameLabel = createElement("TextLabel", {
-            Size = UDim2.new(1, -10, 0.5, 0),
-            Position = UDim2.new(0, 5, 0, 2),
-            BackgroundTransparency = 1,
-            Text = brainrot.name,
-            TextColor3 = COLORS.Green,
-            TextSize = 12,
-            Font = Enum.Font.GothamBold,
-            TextScaled = true,
-            Parent = frame,
-        })
-        
-        local valueLabel = createElement("TextLabel", {
-            Size = UDim2.new(1, -10, 0.5, 0),
-            Position = UDim2.new(0, 5, 0.5, -2),
-            BackgroundTransparency = 1,
-            Text = "$" .. tostring(brainrot.value) .. "/s | " .. brainrot.owner,
-            TextColor3 = COLORS.Cyan,
-            TextSize = 10,
-            Font = Enum.Font.Gotham,
-            TextScaled = true,
-            Parent = frame,
-        })
-        
-        ESP_INSTANCES[brainrot.name .. brainrot.owner] = {
-            highlight = highlight,
-            billboard = bb,
-        }
-    end
-end
-
--- ============================================================
--- SPEED BOOST
--- ============================================================
-
-local function enableSpeedBoost()
-    if speedConnection then speedConnection:Disconnect() end
-    
-    speedConnection = S.RunService.Heartbeat:Connect(function()
-        if not CONFIG.SPEED_BOOST_ENABLED then return end
-        
-        local char = S.LocalPlayer.Character
-        if not char then return end
-        local humanoid = char:FindFirstChild("Humanoid")
-        if not humanoid then return end
-        
-        humanoid.WalkSpeed = CONFIG.WALK_SPEED
-    end)
-end
-
--- ============================================================
--- AUTO-STEAL SYSTEM
--- ============================================================
-
-local function teleportToBrainrot(brainrotData)
-    local hrp = getHRP()
-    if not hrp or not brainrotData.model or not brainrotData.model.Parent then return end
-    
-    hrp.CFrame = CFrame.new(brainrotData.position + Vector3.new(0, 3, 0))
-    showNotification("🎯 Teleported to " .. brainrotData.name, COLORS.Success)
-end
-
-local function getNearestBrainrot()
-    local hrp = getHRP()
-    if not hrp then return nil end
-    
-    local nearest, minDist = nil, math.huge
-    for _, brainrot in ipairs(allBrainrotsCache) do
-        if brainrot.isMyBase then continue end
-        if not brainrot.model or not brainrot.model.Parent then continue end
-        
-        local dist = (hrp.Position - brainrot.position).Magnitude
-        if dist < minDist then
-            minDist = dist
-            nearest = brainrot
-        end
-    end
-    return nearest
-end
-
-local function getBestValueBrainrot()
-    for _, brainrot in ipairs(allBrainrotsCache) do
-        if not brainrot.isMyBase and brainrot.model and brainrot.model.Parent then
-            return brainrot
-        end
-    end
-    return nil
-end
-
-local function getPriorityBrainrot()
-    for _, priority in ipairs(PRIORITY_BRAINROTS) do
-        for _, brainrot in ipairs(allBrainrotsCache) do
-            if not brainrot.isMyBase and brainrot.name:find(priority) then
-                return brainrot
-            end
-        end
-    end
-    return nil
-end
-
-local function autoStealLoop()
-    if stealConnection then stealConnection:Disconnect() end
-    
-    stealConnection = S.RunService.Heartbeat:Connect(function()
-        if not (CONFIG.AUTO_STEAL_ENABLED or CONFIG.AUTO_STEAL_NEAREST_ENABLED or CONFIG.AUTO_STEAL_BEST_VALUE) then
-            return
-        end
-        
-        task.wait(0.5)
-        
-        scanBrainrots()
-        
-        local target = nil
-        
-        if CONFIG.AUTO_STEAL_BEST_VALUE then
-            target = getPriorityBrainrot() or getBestValueBrainrot()
-        elseif CONFIG.AUTO_STEAL_NEAREST_ENABLED then
-            target = getNearestBrainrot()
-        elseif CONFIG.AUTO_STEAL_ENABLED then
-            target = getBestValueBrainrot()
-        end
-        
-        if target then
-            teleportToBrainrot(target)
-        end
-    end)
-end
-
--- ============================================================
--- AUTO BASE LOCK
--- ============================================================
-
-local function autoLockBase()
-    task.spawn(function()
-        while CONFIG.AUTO_LOCK_BASE do
-            local myBase = getMyBase()
-            if myBase then
-                local lockButton = myBase:FindFirstChild("LockButton") or myBase:FindFirstChild("Button")
-                if lockButton and lockButton:IsA("BasePart") then
-                    local clickDetector = lockButton:FindFirstChildOfClass("ClickDetector")
-                    if clickDetector then
-                        fireclickdetector(clickDetector)
-                    end
+    if CONFIG.ESP_SHOW_BASES then
+        local bases = S.Workspace:FindFirstChild("Bases")
+        if bases then
+            for _, base in ipairs(bases:GetChildren()) do
+                if base.Name ~= S.LocalPlayer.Name and base:IsA("Model") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Adornee = base
+                    highlight.FillColor = COLORS.Green
+                    highlight.FillTransparency = 0.7
+                    highlight.OutlineColor = COLORS.Cyan
+                    highlight.OutlineTransparency = 0.3
+                    highlight.Parent = screenGui
+                    
+                    ESP_INSTANCES[base.Name] = {highlight = highlight}
                 end
             end
-            task.wait(61) -- Lock every 61 seconds (cooldown is 60)
         end
-    end)
+    end
 end
 
 -- ============================================================
@@ -637,7 +536,6 @@ local function createButton(parent, text, color, callback, order)
     })
     
     createElement("UICorner", {CornerRadius = UDim.new(0, 8), Parent = btn})
-    
     btn.MouseButton1Click:Connect(callback)
     
     return btn
@@ -653,8 +551,8 @@ local function createGui()
     })
     
     mainFrame = createElement("Frame", {
-        Size = UDim2.new(0, 400, 0, 500),
-        Position = CONFIG.GUI_POSITION_X and UDim2.new(0, CONFIG.GUI_POSITION_X, 0, CONFIG.GUI_POSITION_Y) or UDim2.new(0.5, -200, 0.5, -250),
+        Size = UDim2.new(0, 400, 0, 550),
+        Position = CONFIG.GUI_POSITION_X and UDim2.new(0, CONFIG.GUI_POSITION_X, 0, CONFIG.GUI_POSITION_Y) or UDim2.new(0.5, -200, 0.5, -275),
         BackgroundColor3 = COLORS.Background,
         BackgroundTransparency = 0.15,
         BorderSizePixel = 0,
@@ -686,7 +584,7 @@ local function createGui()
         Size = UDim2.new(1, -60, 0, 14),
         Position = UDim2.new(0, 15, 0, 32),
         BackgroundTransparency = 1,
-        Text = "Steal a Brainrot Edition • v1.0",
+        Text = "Steal a Brainrot v2.0 • WORKING",
         TextColor3 = COLORS.TextDim,
         TextSize = 11,
         Font = Enum.Font.Gotham,
@@ -748,38 +646,47 @@ local function createGui()
         })
     end
     
-    section("🎯 AUTO STEALING")
-    createToggle(contentFrame, "Auto-Steal Best Value", "AUTO_STEAL_BEST_VALUE", nil, next())
-    createToggle(contentFrame, "Auto-Steal Nearest", "AUTO_STEAL_NEAREST_ENABLED", nil, next())
-    createToggle(contentFrame, "Auto-Steal Any", "AUTO_STEAL_ENABLED", nil, next())
+    section("🎯 AUTO FEATURES")
+    createToggle(contentFrame, "Auto-Buy Brainrot", "AUTO_BUY_BRAINROT", function(v)
+        if v then autoBuyBrainrot() end
+    end, next())
+    createToggle(contentFrame, "Auto-Steal", "AUTO_STEAL_ENABLED", function(v)
+        if v then autoSteal() end
+    end, next())
+    createToggle(contentFrame, "Auto-Defend Base", "AUTO_DEFEND_BASE", function(v)
+        if v then autoDefendBase() end
+    end, next())
     
-    section("⚡ MOVEMENT")
+    section("⚡ MOVEMENT & PROTECTION")
     createToggle(contentFrame, "Speed Boost", "SPEED_BOOST_ENABLED", function(v)
         if v then enableSpeedBoost() end
     end, next())
-    createToggle(contentFrame, "Anti-Stun", "ANTI_STUN_ENABLED", nil, next())
-    
-    section("🛡️ BASE DEFENSE")
-    createToggle(contentFrame, "Auto-Lock Base", "AUTO_LOCK_BASE", function(v)
-        if v then autoLockBase() end
+    createToggle(contentFrame, "Desync V3", "DESYNC_ENABLED", function(v)
+        if v then enableDesync() else disableDesync() end
+    end, next())
+    createToggle(contentFrame, "No Slowdown", "NO_SLOWDOWN", function(v)
+        if v then enableNoSlowdown() end
     end, next())
     
     section("👁️ ESP")
-    createToggle(contentFrame, "Brainrot ESP", "ESP_ENABLED", refreshESP, next())
+    createToggle(contentFrame, "Base ESP", "ESP_ENABLED", refreshESP, next())
     
     section("⚙️ QUICK ACTIONS")
-    createButton(contentFrame, "Scan Brainrots", COLORS.Green, function()
-        scanBrainrots()
-        refreshESP()
-        showNotification("✓ Scanned all brainrots", COLORS.Success)
+    createButton(contentFrame, "TP to Conveyor", COLORS.Green, function()
+        local hrp = getHRP()
+        local conveyor = findConveyor()
+        if hrp and conveyor then
+            hrp.CFrame = conveyor:GetPivot() + Vector3.new(0, 5, 0)
+            showNotification("🚀 Teleported to Conveyor", COLORS.Success)
+        end
     end, next())
     
-    createButton(contentFrame, "TP to Best Brainrot", COLORS.Cyan, function()
-        local best = getBestValueBrainrot()
-        if best then
-            teleportToBrainrot(best)
-        else
-            showNotification("No brainrots found!", COLORS.Warning)
+    createButton(contentFrame, "TP to My Base", COLORS.Cyan, function()
+        local hrp = getHRP()
+        local myBase = getMyBase()
+        if hrp and myBase then
+            hrp.CFrame = myBase:GetPivot() + Vector3.new(0, 5, 0)
+            showNotification("🏠 Teleported to Base", COLORS.Success)
         end
     end, next())
     
@@ -796,14 +703,6 @@ local function createGui()
         })
         
         createElement("UICorner", {CornerRadius = UDim.new(0, 8), Parent = container})
-        
-        createElement("UIStroke", {
-            Color = COLORS.Green,
-            Thickness = 1,
-            Transparency = 0.7,
-            ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-            Parent = container,
-        })
         
         createElement("TextLabel", {
             Size = UDim2.new(0.5, 0, 1, 0),
@@ -861,78 +760,14 @@ local function createGui()
                 end
             end)
         end)
-        
-        btn.MouseEnter:Connect(function()
-            if not listening then
-                tween(keyLabel, {BackgroundTransparency = 0.1})
-            end
-        end)
-        
-        btn.MouseLeave:Connect(function()
-            if not listening then
-                tween(keyLabel, {BackgroundTransparency = 0.3})
-            end
-        end)
     end
     
     createKeybindButton(contentFrame, "Toggle GUI", "TOGGLE_GUI_KEYBIND", next())
-    createKeybindButton(contentFrame, "Teleport to Best", "TELEPORT_KEYBIND", next())
     createKeybindButton(contentFrame, "Toggle Speed", "SPEED_KEYBIND", next())
+    createKeybindButton(contentFrame, "Toggle Desync", "DESYNC_KEYBIND", next())
     createKeybindButton(contentFrame, "Toggle Auto-Farm", "AUTO_FARM_KEYBIND", next())
     
-    section("📊 STATISTICS")
-    
-    local statsFrame = createElement("Frame", {
-        Size = UDim2.new(1, -20, 0, 140),
-        BackgroundTransparency = 1,
-        LayoutOrder = next(),
-        Parent = contentFrame,
-    })
-    
-    local function statCard(text, yPos)
-        local card = createElement("Frame", {
-            Size = UDim2.new(1, 0, 0, 32),
-            Position = UDim2.new(0, 0, 0, yPos),
-            BackgroundColor3 = COLORS.Surface,
-            BackgroundTransparency = 0.3,
-            BorderSizePixel = 0,
-            Parent = statsFrame,
-        })
-        
-        createElement("UICorner", {CornerRadius = UDim.new(0, 8), Parent = card})
-        
-        createElement("TextLabel", {
-            Size = UDim2.new(0.5, 0, 1, 0),
-            Position = UDim2.new(0, 10, 0, 0),
-            BackgroundTransparency = 1,
-            Text = text,
-            TextColor3 = COLORS.TextDim,
-            TextSize = 11,
-            Font = Enum.Font.Gotham,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            Parent = card,
-        })
-        
-        return createElement("TextLabel", {
-            Size = UDim2.new(0.5, -10, 1, 0),
-            Position = UDim2.new(0.5, 0, 0, 0),
-            BackgroundTransparency = 1,
-            Text = "0",
-            TextColor3 = COLORS.Green,
-            TextSize = 13,
-            Font = Enum.Font.GothamBold,
-            TextXAlignment = Enum.TextXAlignment.Right,
-            Parent = card,
-        })
-    end
-    
-    statLabels = {
-        total = statCard("Total Brainrots", 0),
-        value = statCard("Total Value/s", 36),
-        mine = statCard("My Brainrots", 72),
-        myValue = statCard("My Value/s", 108),
-    }
-    
+    -- Dragging
     local dragging, dragStart, startPos
     
     titleBar.InputBegan:Connect(function(input)
@@ -952,70 +787,4 @@ local function createGui()
         end
     end)
     
-    S.UIS.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-end
-
-local function toggleGui()
-    guiVisible = not guiVisible
-    if mainFrame then
-        mainFrame.Visible = guiVisible
-    end
-end
-
--- ============================================================
--- KEYBINDS
--- ============================================================
-
-S.UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    
-    if input.KeyCode == CONFIG.TOGGLE_GUI_KEYBIND then
-        toggleGui()
-    elseif input.KeyCode == CONFIG.TELEPORT_KEYBIND then
-        local best = getBestValueBrainrot()
-        if best then teleportToBrainrot(best) end
-    elseif input.KeyCode == CONFIG.SPEED_KEYBIND then
-        CONFIG.SPEED_BOOST_ENABLED = not CONFIG.SPEED_BOOST_ENABLED
-        saveConfig()
-        showNotification(CONFIG.SPEED_BOOST_ENABLED and "✓ Speed ON" or "✗ Speed OFF", COLORS.Green)
-    elseif input.KeyCode == CONFIG.AUTO_FARM_KEYBIND then
-        CONFIG.AUTO_STEAL_BEST_VALUE = not CONFIG.AUTO_STEAL_BEST_VALUE
-        saveConfig()
-        showNotification(CONFIG.AUTO_STEAL_BEST_VALUE and "✓ Auto-Farm ON" or "✗ Auto-Farm OFF", COLORS.Green)
-    end
-end)
-
--- ============================================================
--- INITIALIZATION
--- ============================================================
-
-pcall(loadConfig)
-
-if not game:IsLoaded() then
-    game.Loaded:Wait()
-end
-
-task.spawn(function()
-    createGui()
-    enableSpeedBoost()
-    autoStealLoop()
-    
-    task.wait(1)
-    
-    scanBrainrots()
-    refreshESP()
-    
-    showNotification("✓ Nexa Brainrot Hub Loaded!", COLORS.Success)
-end)
-
-print("✓ Nexa Hub v1.0 - Steal a Brainrot Edition Loaded!")
+    S.UIS.InputChanged:Connect(
