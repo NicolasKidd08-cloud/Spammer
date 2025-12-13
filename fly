@@ -1,12 +1,12 @@
--- Truly Perfected Fly Script (Gravity Nullification Bypass) by Nexa
--- This is the definitive version for bypassing aggressive anti-cheats.
--- Put this LocalScript in StarterPlayer > StarterPlayerScripts
+-- The Final Fly Script (Humanoid State Impersonation) by Nexa
+-- This is the last and most advanced attempt to bypass a top-tier anti-cheat.
+-- Put this LocalScript in StarterPlayer > StarterPlayerScripts and DELETE ALL OTHERS.
 
 -- ==========================================================
 -- || CONFIGURATION ||
 -- ==========================================================
-local FLY_SPEED = 90       -- Speed for horizontal movement
-local VERTICAL_SPEED = 60  -- Speed for moving up and down
+local FLY_SPEED = 70
+local VERTICAL_SPEED = 50
 local FLY_KEY = Enum.KeyCode.F
 
 -- ==========================================================
@@ -17,140 +17,100 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 -- ==========================================================
--- || VARIABLES ||
+-- || VARIABLES & UI ||
 -- ==========================================================
 local player = Players.LocalPlayer
 local isFlying = false
-local moveInput = Vector3.new(0, 0, 0)
-local antiGravityForce, velocityController
+local moveInput = Vector3.new()
 
-local keyBinds = {
-	[Enum.KeyCode.W] = Vector3.new(0, 0, -1),
-	[Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
-	[Enum.KeyCode.S] = Vector3.new(0, 0, 1),
-	[Enum.KeyCode.D] = Vector3.new(1, 0, 0),
-	[Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
-	[Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0),
-}
-
--- ==========================================================
--- || CREATE THE UI ||
--- ==========================================================
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.Name = "FlyUI"
 screenGui.ResetOnSpawn = false
-
 local flyButton = Instance.new("TextButton", screenGui)
-flyButton.Name = "FlyToggleButton"
-flyButton.Text = "Fly: OFF"
-flyButton.Font = Enum.Font.SourceSansBold
-flyButton.TextColor3 = Color3.new(1, 1, 1)
-flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-flyButton.BorderColor3 = Color3.fromRGB(20, 20, 20)
-flyButton.BorderSizePixel = 2
-flyButton.Size = UDim2.new(0, 100, 0, 40)
-flyButton.Position = UDim2.new(1, -110, 1, -50)
+-- UI Properties
+flyButton.Name = "FlyToggleButton"; flyButton.Text = "Fly: OFF"; flyButton.Font = Enum.Font.SourceSansBold
+flyButton.TextColor3 = Color3.new(1, 1, 1); flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+flyButton.BorderColor3 = Color3.fromRGB(20, 20, 20); flyButton.BorderSizePixel = 2
+flyButton.Size = UDim2.new(0, 100, 0, 40); flyButton.Position = UDim2.new(1, -110, 1, -50)
+
+local keyBinds = {
+	[Enum.KeyCode.W] = Vector3.new(0, 0, -1), [Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
+	[Enum.KeyCode.S] = Vector3.new(0, 0, 1), [Enum.KeyCode.D] = Vector3.new(1, 0, 0),
+	[Enum.KeyCode.Space] = Vector3.new(0, 1, 0), [Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0),
+}
+local character, humanoid, rootPart, flightConnection
 
 -- ==========================================================
--- || FUNCTIONS & EVENTS ||
+-- || CORE FUNCTIONS ||
 -- ==========================================================
 
 local function stopFlying()
 	isFlying = false
+	if flightConnection then
+		flightConnection:Disconnect()
+		flightConnection = nil
+	end
+	
 	flyButton.Text = "Fly: OFF"
 	flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 	
-	if antiGravityForce then antiGravityForce:Destroy() end
-	if velocityController then velocityController:Destroy() end
-	antiGravityForce, velocityController = nil, nil
-	
-	local character = player.Character
-	if character then
-		local humanoid = character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			-- Restore normal humanoid physics
-			humanoid:ChangeState(Enum.HumanoidStateType.Running)
-		end
+	if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+		-- Return control to the standard Roblox controller
+		humanoid:ChangeState(Enum.HumanoidStateType.Running)
 	end
 end
 
 local function startFlying()
-	local character = player.Character
+	character = player.Character
 	if not character then return end
 	
-	local rootPart = character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not rootPart or not humanoid then return end
+	humanoid = character:FindFirstChildOfClass("Humanoid")
+	rootPart = character:FindFirstChild("HumanoidRootPart")
+	
+	if not humanoid or not rootPart or humanoid:GetState() == Enum.HumanoidStateType.Dead then return end
 
 	isFlying = true
 	flyButton.Text = "Fly: ON"
 	flyButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 	
-	-- Calculate total character mass
-	local totalMass = 0
-	for _, part in ipairs(character:GetDescendants()) do
-		if part:IsA("BasePart") then
-			totalMass = totalMass + part:GetMass()
-		end
-	end
+	-- THE TRICK: Set the state to Freefall. We are telling the server we are falling.
+	-- This is a legitimate state, so it's less suspicious.
+	humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
 
-	-- 1. Create the Anti-Gravity Force
-	antiGravityForce = Instance.new("BodyForce", rootPart)
-	antiGravityForce.Name = "AntiGravity"
-	antiGravityForce.Force = Vector3.new(0, totalMass * workspace.Gravity, 0)
-
-	-- 2. Create the Velocity Controller
-	velocityController = Instance.new("BodyVelocity", rootPart)
-	velocityController.Name = "FlightController"
-	velocityController.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-	velocityController.Velocity = Vector3.new(0, 0, 0)
-	
-	humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-end
-
--- Main flight loop connected to the physics step
-RunService.Stepped:Connect(function()
-	if isFlying and velocityController then
-		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if not humanoid or humanoid.Health <= 0 then
+	-- We then connect our own code to the physics update.
+	-- This connection is VERY IMPORTANT. It runs before Roblox calculates physics.
+	flightConnection = RunService.Heartbeat:Connect(function()
+		if not isFlying or not rootPart or not rootPart.Parent then
 			stopFlying()
 			return
 		end
 
+		-- THE DECEPTION: Override the velocity every single frame.
+		-- The server thinks we're falling, but we are writing our own velocity.
 		local camera_cframe = workspace.CurrentCamera.CFrame
-		local horizontal_vel = Vector3.new(camera_cframe.LookVector.X, 0, camera_cframe.LookVector.Z).Unit * moveInput.Z + camera_cframe.RightVector * moveInput.X
+		local horizontal_vel = (camera_cframe.RightVector * moveInput.X) + (Vector3.new(camera_cframe.LookVector.X, 0, camera_cframe.LookVector.Z).Unit * moveInput.Z)
 		local vertical_vel = Vector3.new(0, moveInput.Y, 0)
+		
+		-- Directly set the velocity of the character's core part
+		rootPart.Velocity = (horizontal_vel * FLY_SPEED) + (vertical_vel * VERTICAL_SPEED)
+		
+		-- Continuously re-assert the state to fight any server corrections
+		if humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
+			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+		end
+	end)
+end
 
-		velocityController.Velocity = (horizontal_vel * FLY_SPEED) + (vertical_vel * VERTICAL_SPEED)
-	end
-end)
-
-
--- Connect Inputs
-flyButton.MouseButton1Click:Connect(function()
-	if isFlying then stopFlying() else startFlying() end
-end)
-
+-- ==========================================================
+-- || INPUT HANDLING ||
+-- ==========================================================
+flyButton.MouseButton1Click:Connect(function() if isFlying then stopFlying() else startFlying() end end)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed then return end
-	if input.KeyCode == FLY_KEY then
-		if isFlying then stopFlying() else startFlying() end
-	end
-	if keyBinds[input.KeyCode] then
-		moveInput = moveInput + keyBinds[input.KeyCode]
-	end
+	if input.KeyCode == FLY_KEY then if isFlying then stopFlying() else startFlying() end end
+	if keyBinds[input.KeyCode] then moveInput += keyBinds[input.KeyCode] end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-	if keyBinds[input.KeyCode] then
-		moveInput = moveInput - keyBinds[input.KeyCode]
-	end
+	if keyBinds[input.KeyCode] then moveInput -= keyBinds[input.KeyCode] end
 end)
-
--- Cleanup on death
-player.CharacterAdded:Connect(function(character)
-	character:WaitForChildOfClass("Humanoid").Died:Connect(stopFlying)
-end)
-if player.Character then
-	player.Character:WaitForChildOfClass("Humanoid").Died:Connect(stopFlying)
-end
+player.CharacterAdded:Connect(function() stopFlying() end)
