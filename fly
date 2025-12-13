@@ -1,0 +1,129 @@
+-- Fly GUI Script
+-- Put this in StarterPlayer > StarterPlayerScripts as a LocalScript
+
+--// Services
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+--// Configuration
+local FLY_SPEED = 100 -- How fast you fly
+local ACCELERATION = 100000 -- How quickly you reach full speed
+
+--// Player & Character Variables
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+--// State Variables
+local isFlying = false
+local bodyVelocity = nil
+local bodyGyro = nil
+
+--// Create the UI Elements
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FlyGui"
+screenGui.ResetOnSpawn = false -- Keep the GUI when you respawn
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 150, 0, 40)
+mainFrame.Position = UDim2.new(0, 10, 0, 100)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true -- Allows dragging
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(1, 0, 1, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "Fly: OFF"
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 18
+toggleButton.Parent = mainFrame
+
+--// Functions
+local function enableFly()
+	-- Create BodyGyro to keep the player upright
+	bodyGyro = Instance.new("BodyGyro")
+	bodyGyro.MaxTorque = Vector3.new(9e8, 9e8, 9e8)
+	bodyGyro.P = 50000
+	bodyGyro.Parent = rootPart
+
+	-- Create BodyVelocity to handle movement
+	bodyVelocity = Instance.new("BodyVelocity")
+	bodyVelocity.MaxForce = Vector3.new(ACCELERATION, ACCELERATION, ACCELERATION)
+	bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+	bodyVelocity.Parent = rootPart
+
+	-- Final setup
+	isFlying = true
+	humanoid.AutoRotate = false -- Stop humanoid from trying to turn
+	toggleButton.Text = "Fly: ON"
+	toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+end
+
+local function disableFly()
+	if bodyGyro then
+		bodyGyro:Destroy()
+		bodyGyro = nil
+	end
+	if bodyVelocity then
+		bodyVelocity:Destroy()
+		bodyVelocity = nil
+	end
+	
+	isFlying = false
+	humanoid.AutoRotate = true -- Give control back to humanoid
+	toggleButton.Text = "Fly: OFF"
+	toggleButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+end
+
+
+--// Update flight based on input
+RunService.RenderStepped:Connect(function()
+	if isFlying and bodyVelocity and rootPart then
+		local moveDirection = Vector3.new(0, 0, 0)
+		
+		if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			moveDirection = moveDirection + workspace.CurrentCamera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+			moveDirection = moveDirection - workspace.CurrentCamera.CFrame.LookVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+			moveDirection = moveDirection + workspace.CurrentCamera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+			moveDirection = moveDirection - workspace.CurrentCamera.CFrame.RightVector
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+			moveDirection = moveDirection + Vector3.new(0, 1, 0)
+		end
+		if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+			moveDirection = moveDirection - Vector3.new(0, 1, 0)
+		end
+		
+		-- Update velocity
+		bodyVelocity.Velocity = moveDirection.Unit * FLY_SPEED
+		
+		-- Update rotation
+		if moveDirection.Magnitude > 0 then
+			bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+		end
+	end
+end)
+
+
+--// Event Connections
+toggleButton.MouseButton1Click:Connect(function()
+	if isFlying then
+		disableFly()
+	else
+		enableFly()
+	end
+end)
