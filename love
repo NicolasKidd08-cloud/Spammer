@@ -199,6 +199,7 @@ end
 -- ============================================================
 
 local function saveConfig()
+    if not writefile then return end
     local data = {}
     for k, v in pairs(CONFIG) do
         if typeof(v) == "EnumItem" then
@@ -208,10 +209,13 @@ local function saveConfig()
         end
     end
     local ok, json = pcall(S.HttpService.JSONEncode, S.HttpService, data)
-    if ok then writefile("NexaBrainrotConfig.json", json) end
+    if ok then 
+        pcall(function() writefile("NexaBrainrotConfig.json", json) end)
+    end
 end
 
 local function loadConfig()
+    if not isfile or not readfile then return end
     if not isfile("NexaBrainrotConfig.json") then return end
     local ok, json = pcall(readfile, "NexaBrainrotConfig.json")
     if not ok then return end
@@ -252,9 +256,11 @@ end
 -- ============================================================
 
 local function enableDesync()
-    pcall(function() setfflag("LargeReplicatorEnabled9", "true") end)
-    pcall(function() setfflag("GameNetDontSendRedundantNumTimes", "1") end)
-    pcall(function() setfflag("MaxTimestepMultiplierAcceleration", "2147483647") end)
+    if setfflag then
+        pcall(function() setfflag("LargeReplicatorEnabled9", "true") end)
+        pcall(function() setfflag("GameNetDontSendRedundantNumTimes", "1") end)
+        pcall(function() setfflag("MaxTimestepMultiplierAcceleration", "2147483647") end)
+    end
     
     if connections.desync then connections.desync:Disconnect() end
     
@@ -333,7 +339,7 @@ local function autoBuyBrainrot()
                     local button = conveyor:FindFirstChild("Button") or conveyor:FindFirstChild("BuyButton")
                     if button then
                         local clickDetector = button:FindFirstChildOfClass("ClickDetector")
-                        if clickDetector then
+                        if clickDetector and fireclickdetector then
                             fireclickdetector(clickDetector)
                         end
                     end
@@ -358,7 +364,7 @@ local function autoDefendBase()
                     local lockButton = myBase:FindFirstChild("LockButton") or myBase:FindFirstChild("Button")
                     if lockButton then
                         local clickDetector = lockButton:FindFirstChildOfClass("ClickDetector")
-                        if clickDetector then
+                        if clickDetector and fireclickdetector then
                             fireclickdetector(clickDetector)
                             showNotification("🛡️ Base Locked", COLORS.Success)
                         end
@@ -390,7 +396,7 @@ local function autoSteal()
                         for _, brainrot in ipairs(base:GetDescendants()) do
                             if brainrot:IsA("Model") and brainrot:FindFirstChild("Humanoid") then
                                 local prompt = brainrot:FindFirstChildOfClass("ProximityPrompt", true)
-                                if prompt and prompt.Enabled then
+                                if prompt and prompt.Enabled and fireproximityprompt then
                                     hrp.CFrame = brainrot:GetPivot()
                                     task.wait(0.1)
                                     fireproximityprompt(prompt)
@@ -787,4 +793,71 @@ local function createGui()
         end
     end)
     
-    S.UIS.InputChanged:Connect(
+    S.UIS.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+local function toggleGui()
+    guiVisible = not guiVisible
+    if mainFrame then
+        mainFrame.Visible = guiVisible
+    end
+end
+
+-- ============================================================
+-- KEYBINDS
+-- ============================================================
+
+S.UIS.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    
+    if input.KeyCode == CONFIG.TOGGLE_GUI_KEYBIND then
+        toggleGui()
+    elseif input.KeyCode == CONFIG.SPEED_KEYBIND then
+        CONFIG.SPEED_BOOST_ENABLED = not CONFIG.SPEED_BOOST_ENABLED
+        if CONFIG.SPEED_BOOST_ENABLED then enableSpeedBoost() end
+        saveConfig()
+        showNotification(CONFIG.SPEED_BOOST_ENABLED and "✓ Speed ON" or "✗ Speed OFF", COLORS.Green)
+    elseif input.KeyCode == CONFIG.DESYNC_KEYBIND then
+        CONFIG.DESYNC_ENABLED = not CONFIG.DESYNC_ENABLED
+        if CONFIG.DESYNC_ENABLED then enableDesync() else disableDesync() end
+        saveConfig()
+    elseif input.KeyCode == CONFIG.AUTO_FARM_KEYBIND then
+        CONFIG.AUTO_BUY_BRAINROT = not CONFIG.AUTO_BUY_BRAINROT
+        if CONFIG.AUTO_BUY_BRAINROT then autoBuyBrainrot() end
+        saveConfig()
+        showNotification(CONFIG.AUTO_BUY_BRAINROT and "✓ Auto-Farm ON" or "✗ Auto-Farm OFF", COLORS.Green)
+    end
+end)
+
+-- ============================================================
+-- INITIALIZATION
+-- ============================================================
+
+pcall(loadConfig)
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+task.spawn(function()
+    task.wait(1)
+    createGui()
+    enableSpeedBoost()
+    enableNoSlowdown()
+    refreshESP()
+    
+    showNotification("✓ Nexa Hub Loaded!", COLORS.Success)
+    showNotification("Press RightCtrl to toggle GUI", COLORS.Cyan)
+end)
+
+print("✓ Nexa Hub v2.0 - Steal a Brainrot (WORKING)")
