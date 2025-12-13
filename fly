@@ -1,108 +1,112 @@
--- The Final Fly Script (Humanoid State Impersonation) by Nexa
--- This is the last and most advanced attempt to bypass a top-tier anti-cheat.
--- Put this LocalScript in StarterPlayer > StarterPlayerScripts and DELETE ALL OTHERS.
+-- The Final Fly Script (Desync Pulse Bypass) by Nexa
+-- The most advanced client-side physics exploit for anti-cheat bypass.
+-- Location: StarterPlayer > StarterPlayerScripts. DELETE ALL OTHERS.
 
 -- ==========================================================
 -- || CONFIGURATION ||
 -- ==========================================================
-local FLY_SPEED = 70
-local VERTICAL_SPEED = 50
+local FLY_SPEED = 75
+local VERTICAL_SPEED = 65
 local FLY_KEY = Enum.KeyCode.F
+-- The Desync Pulse frequency. Lower is more pulses (safer), higher is fewer (smoother). 10 is the sweet spot.
+local PULSE_FREQUENCY = 10 
 
 -- ==========================================================
--- || SERVICES ||
+-- || SERVICES & SETUP ||
 -- ==========================================================
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
--- ==========================================================
--- || VARIABLES & UI ||
--- ==========================================================
 local player = Players.LocalPlayer
 local isFlying = false
 local moveInput = Vector3.new()
+local attachment, antiGravityForce
 
+-- GUI Setup
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 screenGui.Name = "FlyUI"
 screenGui.ResetOnSpawn = false
 local flyButton = Instance.new("TextButton", screenGui)
--- UI Properties
-flyButton.Name = "FlyToggleButton"; flyButton.Text = "Fly: OFF"; flyButton.Font = Enum.Font.SourceSansBold
-flyButton.TextColor3 = Color3.new(1, 1, 1); flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-flyButton.BorderColor3 = Color3.fromRGB(20, 20, 20); flyButton.BorderSizePixel = 2
-flyButton.Size = UDim2.new(0, 100, 0, 40); flyButton.Position = UDim2.new(1, -110, 1, -50)
+flyButton.Name = "FlyToggleButton";flyButton.Text = "Fly: OFF";flyButton.Font = Enum.Font.SourceSansBold
+flyButton.TextColor3 = Color3.new(1, 1, 1);flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+flyButton.BorderColor3 = Color3.fromRGB(20, 20, 20);flyButton.BorderSizePixel = 2
+flyButton.Size = UDim2.new(0, 100, 0, 40);flyButton.Position = UDim2.new(1, -110, 1, -50)
 
 local keyBinds = {
 	[Enum.KeyCode.W] = Vector3.new(0, 0, -1), [Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
 	[Enum.KeyCode.S] = Vector3.new(0, 0, 1), [Enum.KeyCode.D] = Vector3.new(1, 0, 0),
 	[Enum.KeyCode.Space] = Vector3.new(0, 1, 0), [Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0),
 }
-local character, humanoid, rootPart, flightConnection
+local loopCounter = 0
 
 -- ==========================================================
--- || CORE FUNCTIONS ||
+-- || CORE FLIGHT LOGIC ||
 -- ==========================================================
 
 local function stopFlying()
 	isFlying = false
-	if flightConnection then
-		flightConnection:Disconnect()
-		flightConnection = nil
-	end
-	
+	if attachment then attachment:Destroy() end -- This also destroys the VectorForce
+	attachment, antiGravityForce = nil, nil
 	flyButton.Text = "Fly: OFF"
 	flyButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-	
-	if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
-		-- Return control to the standard Roblox controller
-		humanoid:ChangeState(Enum.HumanoidStateType.Running)
-	end
 end
 
 local function startFlying()
-	character = player.Character
+	local character = player.Character
 	if not character then return end
-	
-	humanoid = character:FindFirstChildOfClass("Humanoid")
-	rootPart = character:FindFirstChild("HumanoidRootPart")
-	
-	if not humanoid or not rootPart or humanoid:GetState() == Enum.HumanoidStateType.Dead then return end
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if not rootPart then return end
+
+	-- 1. Create the Gravity Suspension system using modern physics objects
+	attachment = Instance.new("Attachment", rootPart)
+	antiGravityForce = Instance.new("VectorForce", attachment)
+	antiGravityForce.Force = Vector3.new(0, workspace.Gravity * rootPart.AssemblyMass, 0)
+	antiGravityForce.RelativeTo = Enum.ActuatorRelativeTo.World
+	antiGravityForce.Attachment0 = attachment
 
 	isFlying = true
 	flyButton.Text = "Fly: ON"
 	flyButton.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
-	
-	-- THE TRICK: Set the state to Freefall. We are telling the server we are falling.
-	-- This is a legitimate state, so it's less suspicious.
-	humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-
-	-- We then connect our own code to the physics update.
-	-- This connection is VERY IMPORTANT. It runs before Roblox calculates physics.
-	flightConnection = RunService.Heartbeat:Connect(function()
-		if not isFlying or not rootPart or not rootPart.Parent then
-			stopFlying()
-			return
-		end
-
-		-- THE DECEPTION: Override the velocity every single frame.
-		-- The server thinks we're falling, but we are writing our own velocity.
-		local camera_cframe = workspace.CurrentCamera.CFrame
-		local horizontal_vel = (camera_cframe.RightVector * moveInput.X) + (Vector3.new(camera_cframe.LookVector.X, 0, camera_cframe.LookVector.Z).Unit * moveInput.Z)
-		local vertical_vel = Vector3.new(0, moveInput.Y, 0)
-		
-		-- Directly set the velocity of the character's core part
-		rootPart.Velocity = (horizontal_vel * FLY_SPEED) + (vertical_vel * VERTICAL_SPEED)
-		
-		-- Continuously re-assert the state to fight any server corrections
-		if humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
-			humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
-		end
-	end)
 end
 
 -- ==========================================================
--- || INPUT HANDLING ||
+-- || RENDER LOOP & THE DESYNC PULSE ||
+-- ==========================================================
+RunService.RenderStepped:Connect(function()
+	if not isFlying then return end
+	
+	local character = player.Character
+	if not character then stopFlying() return end
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not rootPart or not humanoid or humanoid.Health <= 0 then
+		stopFlying()
+		return
+	end
+	
+	-- Update anti-gravity force in case character mass changes (e.g., holding an item)
+	antiGravityForce.Force = Vector3.new(0, workspace.Gravity * rootPart.AssemblyMass, 0)
+
+	-- Calculate desired velocity
+	local camera_cframe = workspace.CurrentCamera.CFrame
+	local horizontal_vel = (camera_cframe.RightVector * moveInput.X) + (Vector3.new(camera_cframe.LookVector.X, 0, camera_cframe.LookVector.Z).Unit * moveInput.Z)
+	local vertical_vel = Vector3.new(0, moveInput.Y, 0)
+	local targetVelocity = (horizontal_vel * FLY_SPEED) + (vertical_vel * VERTICAL_SPEED)
+	
+	-- THE DESYNC PULSE --
+	loopCounter = (loopCounter + 1)
+	if loopCounter % PULSE_FREQUENCY == 0 then
+		-- For one frame, we send a "reset" to the server.
+		rootPart.Velocity = Vector3.new(0,0,0)
+	else
+		-- On all other frames, we fly normally.
+		rootPart.Velocity = targetVelocity
+	end
+end)
+
+-- ==========================================================
+-- || INPUT HANDLING & CLEANUP ||
 -- ==========================================================
 flyButton.MouseButton1Click:Connect(function() if isFlying then stopFlying() else startFlying() end end)
 UserInputService.InputBegan:Connect(function(input, processed)
@@ -113,4 +117,7 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if keyBinds[input.KeyCode] then moveInput -= keyBinds[input.KeyCode] end
 end)
-player.CharacterAdded:Connect(function() stopFlying() end)
+player.CharacterAdded:Connect(function()
+    moveInput = Vector3.new()
+    stopFlying()
+end)
