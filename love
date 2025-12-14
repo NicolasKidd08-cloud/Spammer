@@ -399,6 +399,7 @@ local function scanPlot(plot)
         end)
         
         updateStats()
+        refreshAnimalESP() -- Add this line
     end)
 end
 
@@ -416,6 +417,25 @@ local function initScanner()
             scanPlot(plot)
         end)
     end
+    
+    -- Monitor for new players
+    S.Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function()
+            task.wait(1)
+            if CONFIG.ESP_ENABLED then
+                createPlayerESP(player)
+            end
+        end)
+    end)
+    
+    -- Clean up when players leave
+    S.Players.PlayerRemoving:Connect(function(player)
+        if PLAYER_ESP[player] then
+            if PLAYER_ESP[player].highlight then PLAYER_ESP[player].highlight:Destroy() end
+            if PLAYER_ESP[player].billboard then PLAYER_ESP[player].billboard:Destroy() end
+            PLAYER_ESP[player] = nil
+        end
+    end)
     
     task.spawn(function()
         while task.wait(5) do
@@ -666,7 +686,7 @@ local function createGui()
     section("🎯 AUTO FEATURES")
     createToggle(contentFrame, "Auto-TP on Start", "AUTO_TP_ENABLED", next())
     createToggle(contentFrame, "Auto-Steal Highest", "AUTO_STEAL_ENABLED", next())
-    createToggle(contentFrame, "ESP", "ESP_ENABLED", next())
+    createToggle(contentFrame, "Animal + Player ESP", "ESP_ENABLED", next())
     
     section("📊 STATS")
     
@@ -794,6 +814,7 @@ task.spawn(function()
     
     if ModulesLoaded then
         initScanner()
+        autoStealLoop() -- Start auto-steal
     end
     
     task.wait(1)
@@ -802,6 +823,11 @@ task.spawn(function()
     
     if not ModulesLoaded then
         showNotification("⚠️ Limited Mode - Some features disabled", COLORS.Warning)
+    end
+    
+    if CONFIG.AUTO_TP_ENABLED then
+        task.wait(2)
+        teleportToHighest()
     end
     
     print("✓ Nexa Hub v1.0 - Ready!")
