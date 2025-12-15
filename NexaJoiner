@@ -1,22 +1,27 @@
 -- Nexa Joiner for Roblox Steal a Brainrot
 -- Integrates with Nexa Desktop App
+-- NOW WITH BACKGROUND AUTO-JOINER
 
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
 -- Configuration
+local GAME_ID = 18901165922 -- Steal a Brainrot game ID
 local JOB_DATA_URL = "http://localhost:8080/jobs"
 local CHECK_INTERVAL = 1 -- Check every 1 second for speed
 local BYPASS_ERRORS = true -- Bypass "Server Full" errors
 
 -- Data Storage
 local jobLogs = {}
-local currentMode = "manual" -- "manual", "auto", "spammer"
+local currentMode = "manual" -- "manual", "auto", "spammer", "background"
 local selectedBrainrot = nil
 local isRunning = false
 local CHILLI_HUB_LOADED = false
+local lastJobId = nil
+local isJoining = false
 
 -- UI Creation
 local player = Players.LocalPlayer
@@ -27,12 +32,9 @@ if BYPASS_ERRORS then
     pcall(function()
         StarterGui:SetCore("TopbarEnabled", true)
     end)
-    
-    -- Note: Error notification blocking requires a different approach in newer Roblox
-    -- The hookfunction method may not work on all executors
-    -- You can try using pcall to wrap teleport attempts instead
 end
 
+-- Main GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NexaJoiner"
 screenGui.ResetOnSpawn = false
@@ -129,6 +131,9 @@ closeCorner.Parent = closeButton
 
 closeButton.MouseButton1Click:Connect(function()
     screenGui:Destroy()
+    -- Also destroy background status if exists
+    local bgGui = playerGui:FindFirstChild("BackgroundStatus")
+    if bgGui then bgGui:Destroy() end
 end)
 
 -- Info Label
@@ -147,15 +152,15 @@ local infoCorner = Instance.new("UICorner")
 infoCorner.CornerRadius = UDim.new(0, 8)
 infoCorner.Parent = infoLabel
 
--- Mode Buttons
+-- Mode Buttons (3 buttons in a row)
 local autoButton = Instance.new("TextButton")
-autoButton.Size = UDim2.new(0, 200, 0, 50)
+autoButton.Size = UDim2.new(0, 130, 0, 50)
 autoButton.Position = UDim2.new(0, 20, 0, 120)
 autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-autoButton.Text = "🎯 AUTO JOIN"
+autoButton.Text = "🎯 AUTO"
 autoButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 autoButton.Font = Enum.Font.GothamBold
-autoButton.TextSize = 16
+autoButton.TextSize = 14
 autoButton.ZIndex = 1001
 autoButton.Parent = mainFrame
 
@@ -164,19 +169,34 @@ autoCorner.CornerRadius = UDim.new(0, 8)
 autoCorner.Parent = autoButton
 
 local spamButton = Instance.new("TextButton")
-spamButton.Size = UDim2.new(0, 200, 0, 50)
-spamButton.Position = UDim2.new(0, 230, 0, 120)
+spamButton.Size = UDim2.new(0, 130, 0, 50)
+spamButton.Position = UDim2.new(0, 160, 0, 120)
 spamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-spamButton.Text = "⚡ SPAMMER"
+spamButton.Text = "⚡ SPAM"
 spamButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 spamButton.Font = Enum.Font.GothamBold
-spamButton.TextSize = 16
+spamButton.TextSize = 14
 spamButton.ZIndex = 1001
 spamButton.Parent = mainFrame
 
 local spamCorner = Instance.new("UICorner")
 spamCorner.CornerRadius = UDim.new(0, 8)
 spamCorner.Parent = spamButton
+
+local backgroundButton = Instance.new("TextButton")
+backgroundButton.Size = UDim2.new(0, 130, 0, 50)
+backgroundButton.Position = UDim2.new(0, 300, 0, 120)
+backgroundButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+backgroundButton.Text = "👻 HIDDEN"
+backgroundButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+backgroundButton.Font = Enum.Font.GothamBold
+backgroundButton.TextSize = 14
+backgroundButton.ZIndex = 1001
+backgroundButton.Parent = mainFrame
+
+local backgroundCorner = Instance.new("UICorner")
+backgroundCorner.CornerRadius = UDim.new(0, 8)
+backgroundCorner.Parent = backgroundButton
 
 local stopButton = Instance.new("TextButton")
 stopButton.Size = UDim2.new(1, -40, 0, 40)
@@ -225,9 +245,51 @@ listLayout.Padding = UDim.new(0, 5)
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = jobListFrame
 
+-- Background Status Indicator (separate GUI)
+local bgScreenGui = Instance.new("ScreenGui")
+bgScreenGui.Name = "BackgroundStatus"
+bgScreenGui.ResetOnSpawn = false
+bgScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+bgScreenGui.IgnoreGuiInset = true
+bgScreenGui.Parent = playerGui
+
+local bgStatusFrame = Instance.new("Frame")
+bgStatusFrame.Name = "StatusFrame"
+bgStatusFrame.Size = UDim2.new(0, 200, 0, 40)
+bgStatusFrame.Position = UDim2.new(1, -210, 1, -50)
+bgStatusFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 20)
+bgStatusFrame.BackgroundTransparency = 0.3
+bgStatusFrame.BorderSizePixel = 0
+bgStatusFrame.ZIndex = 999
+bgStatusFrame.Active = false
+bgStatusFrame.Visible = false -- Hidden by default
+bgStatusFrame.Parent = bgScreenGui
+
+local bgStatusCorner = Instance.new("UICorner")
+bgStatusCorner.CornerRadius = UDim.new(0, 8)
+bgStatusCorner.Parent = bgStatusFrame
+
+local bgStatusLabel = Instance.new("TextLabel")
+bgStatusLabel.Size = UDim2.new(1, -10, 1, 0)
+bgStatusLabel.Position = UDim2.new(0, 5, 0, 0)
+bgStatusLabel.BackgroundTransparency = 1
+bgStatusLabel.Text = "🟢 Background: Active"
+bgStatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+bgStatusLabel.Font = Enum.Font.GothamBold
+bgStatusLabel.TextSize = 11
+bgStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+bgStatusLabel.ZIndex = 1000
+bgStatusLabel.Active = false
+bgStatusLabel.Parent = bgStatusFrame
+
 -- Functions
 local function updateStatus(text)
     statusLabel.Text = "Status: " .. text
+end
+
+local function updateBackgroundStatus(text, color)
+    bgStatusLabel.Text = text
+    bgStatusLabel.TextColor3 = color or Color3.fromRGB(100, 255, 100)
 end
 
 local function formatMoney(amount)
@@ -300,7 +362,6 @@ local function createJobEntry(brainrotName, money, jobId, players)
         selectedBrainrot = {name = brainrotName, money = money, jobId = jobId, players = players}
         updateStatus("Selected: " .. brainrotName)
         
-        -- Highlight selected
         for _, child in pairs(jobListFrame:GetChildren()) do
             if child:IsA("Frame") then
                 child.BackgroundColor3 = Color3.fromRGB(45, 55, 45)
@@ -371,6 +432,26 @@ local function enterJobIdInChilliHub(jobId)
     return false
 end
 
+local function directTeleportToJob(jobId)
+    if isJoining then return end
+    
+    isJoining = true
+    updateBackgroundStatus("🔄 Joining: " .. jobId, Color3.fromRGB(255, 200, 100))
+    
+    wait(0.5)
+    
+    local success, errorMsg = pcall(function()
+        TeleportService:TeleportToPlaceInstance(GAME_ID, jobId, player)
+    end)
+    
+    if not success then
+        updateBackgroundStatus("❌ Join Failed", Color3.fromRGB(255, 100, 100))
+        wait(3)
+        updateBackgroundStatus("🟢 Background: Active", Color3.fromRGB(100, 255, 100))
+        isJoining = false
+    end
+end
+
 local function parseMoneyPerSec(moneyText)
     local amount, multiplier = moneyText:match("%$?([%d%.]+)([MKmkBb]?)")
     if not amount then return 0 end
@@ -430,25 +511,58 @@ local function fetchJobsFromDesktop()
                     infoLabel.Text = "🖥️ Desktop App: Connected (" .. #jobs .. " jobs)"
                     infoLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
                     
+                    -- Update background status if in background mode
+                    if currentMode == "background" then
+                        updateBackgroundStatus("📡 Desktop: " .. #jobs .. " jobs", Color3.fromRGB(100, 255, 100))
+                    end
+                    
+                    -- Find best job for background mode
+                    local bestJob = nil
+                    local bestMoney = 0
+                    
                     for _, job in ipairs(jobs) do
                         if job.name and job.jobId then
+                            local money = parseMoneyPerSec(job.money or "$0M/s")
+                            
                             addJobLog({
                                 name = job.name,
-                                money = parseMoneyPerSec(job.money or "$0M/s"),
+                                money = money,
                                 jobId = job.jobId,
                                 players = tonumber(job.players) or 0
                             })
+                            
+                            if money > bestMoney then
+                                bestMoney = money
+                                bestJob = job
+                            end
                         end
+                    end
+                    
+                    -- Auto-join in background mode
+                    if currentMode == "background" and bestJob and bestJob.jobId ~= lastJobId and not isJoining then
+                        lastJobId = bestJob.jobId
+                        spawn(function()
+                            wait(0.5)
+                            directTeleportToJob(bestJob.jobId)
+                        end)
                     end
                 else
                     infoLabel.Text = "🖥️ Desktop App: No jobs yet"
                     infoLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+                    
+                    if currentMode == "background" then
+                        updateBackgroundStatus("⏸️ Desktop: No jobs", Color3.fromRGB(255, 200, 100))
+                    end
                 end
             end)
             
             if not success then
                 infoLabel.Text = "🖥️ Desktop App: Not Running"
                 infoLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                
+                if currentMode == "background" then
+                    updateBackgroundStatus("🔴 Desktop: Offline", Color3.fromRGB(255, 100, 100))
+                end
             end
         end
     end)
@@ -472,7 +586,7 @@ local function spammerMode()
         if selectedBrainrot then
             updateStatus("⚡ SPAMMING: " .. selectedBrainrot.name)
             enterJobIdInChilliHub(selectedBrainrot.jobId)
-            wait(0.1)  -- SUPER FAST
+            wait(0.1)
         else
             updateStatus("⏸️ Spammer: Select job...")
             wait(1)
@@ -486,6 +600,8 @@ autoButton.MouseButton1Click:Connect(function()
         isRunning = false
         currentMode = "manual"
         autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+        bgStatusFrame.Visible = false
+        mainFrame.Visible = true
         updateStatus("⏹️ Auto Join OFF")
         return
     end
@@ -494,6 +610,9 @@ autoButton.MouseButton1Click:Connect(function()
     currentMode = "auto"
     autoButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
     spamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    backgroundButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    bgStatusFrame.Visible = false
+    mainFrame.Visible = true
     updateStatus("🟢 Auto Join ON")
     
     spawn(autoJoinMode)
@@ -504,6 +623,8 @@ spamButton.MouseButton1Click:Connect(function()
         isRunning = false
         currentMode = "manual"
         spamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+        bgStatusFrame.Visible = false
+        mainFrame.Visible = true
         updateStatus("⏹️ Spammer OFF")
         return
     end
@@ -512,9 +633,34 @@ spamButton.MouseButton1Click:Connect(function()
     currentMode = "spammer"
     spamButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
     autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    backgroundButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    bgStatusFrame.Visible = false
+    mainFrame.Visible = true
     updateStatus("🟢 SPAMMER ON")
     
     spawn(spammerMode)
+end)
+
+backgroundButton.MouseButton1Click:Connect(function()
+    if currentMode == "background" then
+        isRunning = false
+        currentMode = "manual"
+        backgroundButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+        bgStatusFrame.Visible = false
+        mainFrame.Visible = true
+        updateStatus("⏹️ Background OFF")
+        return
+    end
+    
+    isRunning = true
+    currentMode = "background"
+    backgroundButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
+    autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    spamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    bgStatusFrame.Visible = true
+    mainFrame.Visible = false
+    updateBackgroundStatus("🟢 Background: Active", Color3.fromRGB(100, 255, 100))
+    updateStatus("👻 Background Mode Active - GUI Hidden")
 end)
 
 stopButton.MouseButton1Click:Connect(function()
@@ -523,12 +669,22 @@ stopButton.MouseButton1Click:Connect(function()
     selectedBrainrot = nil
     autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
     spamButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    backgroundButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+    bgStatusFrame.Visible = false
+    mainFrame.Visible = true
     updateStatus("⏹️ All stopped")
     
     for _, child in pairs(jobListFrame:GetChildren()) do
         if child:IsA("Frame") then
             child.BackgroundColor3 = Color3.fromRGB(45, 55, 45)
         end
+    end
+end)
+
+-- Keep background status in fixed position
+RunService.Heartbeat:Connect(function()
+    if bgStatusFrame.Position ~= UDim2.new(1, -210, 1, -50) then
+        bgStatusFrame.Position = UDim2.new(1, -210, 1, -50)
     end
 end)
 
@@ -544,7 +700,7 @@ spawn(function()
     end
     
     if not CHILLI_HUB_LOADED then
-        updateStatus("⚠️ Load Chilli Hub first!")
+        updateStatus("⚠️ Chilli Hub optional for AUTO/SPAM modes")
     end
 end)
 
@@ -554,5 +710,6 @@ fetchJobsFromDesktop()
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 print("✅ Nexa Joiner Loaded!")
 print("🖥️  Desktop App + Server running!")
-print("⚡ Error bypass: ACTIVE")
+print("👻 NEW: Background mode added!")
+print("⚡ 3 Modes: AUTO, SPAM, HIDDEN")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
