@@ -1,32 +1,45 @@
--- Nexa Joiner UI Core (Final Behavior Locked)
+-- Nexa Joiner (FINAL MERGED)
 -- LocalScript
 
+-- SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+-- CONFIG
+local GAME_ID = 18901165922 -- Steal a Brainrot
+local JOB_DATA_URL = "https://suzanna-nescient-nonconnotatively.ngrok-free.dev/jobs"
+local SPAM_INTERVAL = 2
+
+-- PLAYER
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- STATE
+local spammerOn = true
+local uiHidden = false
+local currentJobId = nil
+local currentJobName = "Waiting..."
+local currentJobPrice = ""
+
+--------------------------------------------------
+-- GUI ROOT
+--------------------------------------------------
 local gui = Instance.new("ScreenGui")
 gui.Name = "NexaJoiner"
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
-
---------------------------------------------------
--- STATE
---------------------------------------------------
-local spammerOn = false
-local currentJobName = "Waiting..."
-local currentJobPrice = ""
-local uiHidden = false
+gui.Parent = playerGui
 
 --------------------------------------------------
 -- HEADER (ALWAYS VISIBLE)
 --------------------------------------------------
 local header = Instance.new("Frame")
 header.Size = UDim2.new(0, 360, 0, 40)
-header.Position = UDim2.new(0.5, -180, 0.2, 0)
-header.BackgroundColor3 = Color3.fromRGB(40, 140, 90)
-header.Parent = gui
+header.Position = UDim2.new(0.5, -180, 0.15, 0)
+header.BackgroundColor3 = Color3.fromRGB(35, 140, 90)
 header.Active = true
 header.Draggable = true
+header.Parent = gui
 
 local headerLabel = Instance.new("TextLabel")
 headerLabel.Size = UDim2.new(1, -40, 1, 0)
@@ -53,7 +66,7 @@ closeBtn.Parent = header
 -- BODY (HIDE / SHOW)
 --------------------------------------------------
 local body = Instance.new("Frame")
-body.Size = UDim2.new(0, 360, 0, 140)
+body.Size = UDim2.new(0, 360, 0, 120)
 body.Position = UDim2.new(0, 0, 1, 0)
 body.BackgroundColor3 = Color3.fromRGB(25, 35, 25)
 body.Parent = header
@@ -65,8 +78,8 @@ jobLabel.BackgroundTransparency = 1
 jobLabel.Text = "Waiting..."
 jobLabel.Font = Enum.Font.GothamBold
 jobLabel.TextSize = 16
-jobLabel.TextColor3 = Color3.fromRGB(200,200,200)
 jobLabel.TextXAlignment = Enum.TextXAlignment.Center
+jobLabel.TextColor3 = Color3.fromRGB(200,200,200)
 jobLabel.Parent = body
 
 local priceLabel = Instance.new("TextLabel")
@@ -76,12 +89,12 @@ priceLabel.BackgroundTransparency = 1
 priceLabel.Text = ""
 priceLabel.Font = Enum.Font.Gotham
 priceLabel.TextSize = 14
-priceLabel.TextColor3 = Color3.fromRGB(180,180,180)
 priceLabel.TextXAlignment = Enum.TextXAlignment.Center
+priceLabel.TextColor3 = Color3.fromRGB(180,180,180)
 priceLabel.Parent = body
 
 --------------------------------------------------
--- UI LOGIC
+-- UI HELPERS
 --------------------------------------------------
 local function updateUI()
 	if spammerOn then
@@ -91,7 +104,6 @@ local function updateUI()
 		jobLabel.TextColor3 = Color3.fromRGB(200,200,200)
 		priceLabel.TextColor3 = Color3.fromRGB(180,180,180)
 	end
-
 	jobLabel.Text = currentJobName
 	priceLabel.Text = currentJobPrice
 end
@@ -105,44 +117,49 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 --------------------------------------------------
--- HEADER CLICK = TOGGLE BODY
+-- HEADER CLICK = REOPEN
 --------------------------------------------------
 header.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		if uiHidden then
-			body.Visible = true
-			uiHidden = false
-		end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 and uiHidden then
+		body.Visible = true
+		uiHidden = false
 	end
 end)
 
 --------------------------------------------------
--- SPAMMER SIMULATION (INTERNAL ONLY)
+-- FETCH + AUTO JOIN (REAL JOIN LOGIC)
 --------------------------------------------------
 task.spawn(function()
 	while true do
 		if spammerOn then
-			-- INTERNAL: teleport spam would happen here
-			-- Job ID is NEVER shown
-			print("[Nexa] Spamming join for:", currentJobName)
+			local ok, data = pcall(function()
+				local res = HttpService:GetAsync(JOB_DATA_URL)
+				return HttpService:JSONDecode(res)
+			end)
+
+			if ok and data and #data > 0 then
+				-- Use newest job (index 1)
+				local job = data[1]
+				if job.jobId then
+					currentJobId = job.jobId
+					currentJobName = job.name or "Unknown"
+					currentJobPrice = job.money or ""
+
+					updateUI()
+
+					-- ACTUAL JOIN
+					pcall(function()
+						TeleportService:TeleportToPlaceInstance(
+							GAME_ID,
+							currentJobId,
+							player
+						)
+					end)
+				end
+			end
 		end
-		task.wait(1.5)
+		task.wait(SPAM_INTERVAL)
 	end
 end)
 
---------------------------------------------------
--- EXAMPLE: AUTO JOB UPDATE (FROM DESKTOP APP)
---------------------------------------------------
--- Call this when a job is selected/logged
-local function setNewJob(name, price)
-	currentJobName = name
-	currentJobPrice = price
-	spammerOn = true
-	updateUI()
-end
-
--- Example trigger (replace with real data)
-task.delay(2, function()
-	setNewJob("Rare Brainrot", "$120M")
-end)
 
