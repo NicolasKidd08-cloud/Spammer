@@ -173,7 +173,14 @@ jobIdInput.ClearTextOnFocus = false
 jobIdInput.TextXAlignment = Enum.TextXAlignment.Left
 jobIdInput.TextTruncate = Enum.TextTruncate.None
 jobIdInput.TextWrapped = false
+jobIdInput.ClipsDescendants = true
 jobIdInput.Parent = jobIdFrame
+
+-- Add padding to prevent text from breaching edges
+local inputPadding = Instance.new("UIPadding")
+inputPadding.PaddingLeft = UDim.new(0, 8)
+inputPadding.PaddingRight = UDim.new(0, 8)
+inputPadding.Parent = jobIdInput
 
 local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 8)
@@ -403,6 +410,12 @@ local function fetchJobs()
 					end)
 					task.wait(0.5)
 					jobIdInput.BackgroundColor3 = originalColor
+					
+					-- AUTO-JOIN: Automatically attempt to join the new server
+					task.spawn(function()
+						task.wait(0.3)
+						attemptJoin()
+					end)
 				end
 			end
 			
