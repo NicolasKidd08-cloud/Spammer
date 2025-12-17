@@ -128,14 +128,14 @@ jobIdLabel.Size = UDim2.new(1, -20, 0, 28)
 jobIdLabel.Position = UDim2.new(0, 12, 0, 8)
 jobIdLabel.BackgroundTransparency = 1
 jobIdLabel.Font = Enum.Font.GothamBold
-jobIdLabel.Text = "🔑 JOB ID (Auto-Fill & Join)"
+jobIdLabel.Text = "🔑 JOB ID (Auto-Join)"
 jobIdLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
 jobIdLabel.TextSize = 13
 jobIdLabel.TextXAlignment = Enum.TextXAlignment.Left
 jobIdLabel.Parent = jobIdFrame
 
 local jobIdInput = Instance.new("TextBox")
-jobIdInput.Size = UDim2.new(1, -80, 0, 38)
+jobIdInput.Size = UDim2.new(1, -24, 0, 38)
 jobIdInput.Position = UDim2.new(0, 12, 0, 42)
 jobIdInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 jobIdInput.Font = Enum.Font.Gotham
@@ -159,20 +159,6 @@ local inputPadding = Instance.new("UIPadding")
 inputPadding.PaddingLeft = UDim.new(0, 8)
 inputPadding.PaddingRight = UDim.new(0, 8)
 inputPadding.Parent = jobIdInput
-
-local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(0, 58, 0, 38)
-joinButton.Position = UDim2.new(1, -70, 0, 42)
-joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-joinButton.Font = Enum.Font.GothamBold
-joinButton.Text = "JOIN"
-joinButton.TextColor3 = Color3.fromRGB(15, 20, 25)
-joinButton.TextSize = 13
-joinButton.Parent = jobIdFrame
-
-local joinCorner = Instance.new("UICorner")
-joinCorner.CornerRadius = UDim.new(0, 8)
-joinCorner.Parent = joinButton
 
 -- Jobs List
 local jobsLabel = Instance.new("TextLabel")
@@ -254,10 +240,12 @@ local function updateConnectionStatus(connected)
 end
 
 local function createJobCard(jobData)
-	local card = Instance.new("Frame")
+	local card = Instance.new("TextButton")
 	card.Size = UDim2.new(1, -16, 0, 75)
 	card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	card.BorderSizePixel = 0
+	card.AutoButtonColor = false
+	card.Text = ""
 	
 	local cardCorner = Instance.new("UICorner")
 	cardCorner.CornerRadius = UDim.new(0, 8)
@@ -314,12 +302,37 @@ local function createJobCard(jobData)
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
 	
+	-- Click to fill job ID and auto-join
+	card.MouseButton1Click:Connect(function()
+		if jobData.jobId then
+			jobIdInput.Text = jobData.jobId
+			showNotification("📋 Selected: " .. jobData.name, Color3.fromRGB(0, 217, 255))
+			
+			-- Flash card
+			card.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
+			task.wait(0.2)
+			card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+			
+			-- Auto-join after selecting
+			task.delay(0.5, attemptJoin)
+		end
+	end)
+	
+	-- Hover effect
+	card.MouseEnter:Connect(function()
+		cardStroke.Transparency = 0.3
+	end)
+	
+	card.MouseLeave:Connect(function()
+		cardStroke.Transparency = 0.7
+	end)
+	
 	return card
 end
 
 local function updateJobsList(jobs)
 	for _, child in ipairs(scrollFrame:GetChildren()) do
-		if child:IsA("Frame") then
+		if child:IsA("TextButton") then
 			child:Destroy()
 		end
 	end
@@ -337,7 +350,7 @@ end
 -- ATTEMPT JOIN FUNCTION - Defined early so it can be called by auto-join
 local function attemptJoin()
 	if joining then 
-		print("NEXA: Already attempting to join, please wait...")
+		print("NEXA: Already joining, please wait...")
 		return 
 	end
 	
@@ -345,17 +358,10 @@ local function attemptJoin()
 	jobId = string.gsub(jobId, "^%s*(.-)%s*$", "%1")
 	
 	if jobId == "" or jobId == "Waiting for job..." then
-		joinButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		joinButton.Text = "!"
-		task.wait(0.5)
-		joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-		joinButton.Text = "JOIN"
 		return
 	end
 	
 	joining = true
-	joinButton.Text = "..."
-	joinButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
 	
 	print("NEXA: Attempting to join server...")
 	print("Place ID:", PLACE_ID)
@@ -366,9 +372,6 @@ local function attemptJoin()
 	end)
 	
 	if not success then
-		joinButton.Text = "ERR"
-		joinButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		
 		local errorDisplay = "Failed to join"
 		if string.find(tostring(errorMsg), "not found") then
 			errorDisplay = "Server not found"
@@ -381,17 +384,12 @@ local function attemptJoin()
 		showNotification("❌ " .. errorDisplay, Color3.fromRGB(255, 68, 68))
 		print("NEXA: Join failed -", errorMsg)
 		task.wait(2)
-		joinButton.Text = "JOIN"
-		joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
 		joining = false
 	else
-		-- Successful teleport initiated
 		print("NEXA: Teleporting...")
-		-- Reset after a short delay in case teleport is delayed/cancelled
-		task.delay(5, function()
+		-- Will teleport, reset after delay in case it fails
+		task.delay(3, function()
 			joining = false
-			joinButton.Text = "JOIN"
-			joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
 		end)
 	end
 end
@@ -454,8 +452,7 @@ closeButton.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
 end)
 
-joinButton.MouseButton1Click:Connect(attemptJoin)
-
+-- Press Enter to manually trigger join
 jobIdInput.FocusLost:Connect(function(enterPressed)
 	if enterPressed and jobIdInput.Text ~= "" then
 		attemptJoin()
@@ -477,5 +474,6 @@ fetchJobs()
 
 print("✅ NEXA Job Monitor loaded successfully!")
 print("🌐 Connecting to desktop server at:", SERVER_URL)
+
 
 
