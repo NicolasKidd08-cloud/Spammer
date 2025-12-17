@@ -18,7 +18,7 @@ local Settings = {
 	ToggleKeybind = Enum.KeyCode.RightControl,
 	AutoJoinNew = true,
 	SpammerEnabled = false,
-	SpammerDelay = 2
+	SpammerDelay = 0.1  -- Very fast spamming (0.1 seconds)
 }
 
 -- Create ScreenGui
@@ -424,7 +424,7 @@ delayInput.Size = UDim2.new(1, -20, 0, 30)
 delayInput.Position = UDim2.new(0, 10, 0, 32)
 delayInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 delayInput.Font = Enum.Font.Gotham
-delayInput.Text = "2"
+delayInput.Text = "0.1"
 delayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 delayInput.TextSize = 12
 delayInput.Parent = delayFrame
@@ -441,11 +441,11 @@ local joining = false
 local spammerRunning = false
 local listeningForKeybind = false
 
--- Notification system
+-- Notification system (simplified - no tween to avoid black screen)
 local function showNotification(text, color)
 	local notif = Instance.new("TextLabel")
 	notif.Size = UDim2.new(0, 300, 0, 50)
-	notif.Position = UDim2.new(0.5, -150, 0, -60)
+	notif.Position = UDim2.new(0.5, -150, 0, 20)
 	notif.BackgroundColor3 = color
 	notif.Font = Enum.Font.GothamBold
 	notif.Text = text
@@ -457,10 +457,8 @@ local function showNotification(text, color)
 	notifCorner.CornerRadius = UDim.new(0, 10)
 	notifCorner.Parent = notif
 	
-	notif:TweenPosition(UDim2.new(0.5, -150, 0, 20), "Out", "Back", 0.5, true)
-	task.wait(3)
-	notif:TweenPosition(UDim2.new(0.5, -150, 0, -60), "In", "Back", 0.3, true)
-	task.wait(0.3)
+	-- Simple fade instead of tween
+	task.wait(2)
 	notif:Destroy()
 end
 
@@ -544,11 +542,6 @@ local function createJobCard(jobData)
 		if jobData.jobId and not joining then
 			jobIdInput.Text = jobData.jobId
 			showNotification("🚀 Joining: " .. jobData.name, Color3.fromRGB(0, 217, 255))
-			
-			-- Flash card
-			card.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-			task.wait(0.2)
-			card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 			
 			-- Immediate join
 			joining = true
@@ -691,13 +684,9 @@ local function fetchJobs()
 					lastJobId = latestJob.jobId
 					jobIdInput.Text = latestJob.jobId
 					
-					local originalColor = jobIdInput.BackgroundColor3
-					jobIdInput.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
 					task.spawn(function()
 						showNotification("🔥 New Job: " .. latestJob.name, Color3.fromRGB(0, 217, 255))
 					end)
-					task.wait(0.5)
-					jobIdInput.BackgroundColor3 = originalColor
 					
 					-- Auto-join if enabled
 					if Settings.AutoJoinNew then
@@ -817,4 +806,3 @@ fetchJobs()
 print("✅ NEXA Job Monitor loaded successfully!")
 print("🌐 Connecting to desktop server at:", SERVER_URL)
 print("🎮 Press", Settings.ToggleKeybind.Name, "to toggle UI")
-
