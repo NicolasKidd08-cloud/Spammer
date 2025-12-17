@@ -414,10 +414,6 @@ local function fetchJobs()
 					task.wait(0.5)
 					jobIdInput.BackgroundColor3 = originalColor
 					
-					-- AUTO-JOIN: Automatically attempt to join the new server
-					task.spawn(function()
-						task.wait(0.3)
-						attemptJoin()
 					end)
 				end
 			end
@@ -510,6 +506,21 @@ joinButton.MouseButton1Click:Connect(attemptJoin)
 jobIdInput.FocusLost:Connect(function(enterPressed)
 	if enterPressed and jobIdInput.Text ~= "" then
 		attemptJoin()
+	end
+end)
+
+-- AUTO-JOIN: Watch for job ID changes and auto-join
+local lastAutoJoinId = ""
+jobIdInput:GetPropertyChangedSignal("Text"):Connect(function()
+	local currentId = jobIdInput.Text
+	if currentId ~= "" and currentId ~= "Waiting for job..." and currentId ~= lastAutoJoinId then
+		lastAutoJoinId = currentId
+		-- Small delay to let visual feedback show, then auto-join
+		task.delay(0.8, function()
+			if jobIdInput.Text == currentId and not joining then
+				attemptJoin()
+			end
+		end)
 	end
 end)
 
