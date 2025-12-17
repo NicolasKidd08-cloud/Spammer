@@ -1,5 +1,5 @@
--- NEXA ROBLOX JOB MONITOR UI
--- Place this as a LocalScript in StarterGui or StarterPlayerScripts
+-- NEXA ROBLOX JOB MONITOR UI - FOR STEAL A BRAINROT
+-- Place this as a script executor script (Synapse, KRNL, etc.)
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -8,27 +8,42 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 -- Configuration
-local SERVER_URL = "http://localhost:8080"
-local UPDATE_INTERVAL = 2 -- seconds
-local PLACE_ID = game.PlaceId -- Change if needed
+local SERVER_URL = "http://localhost:8080"  -- Your desktop server
+local UPDATE_INTERVAL = 3  -- seconds between checks
+local PLACE_ID = game.PlaceId  -- Automatically gets current game ID
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NexaJobMonitor"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 400, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 420, 0, 550)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
+
+-- Add shadow effect
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.BackgroundTransparency = 1
+shadow.Position = UDim2.new(0, -15, 0, -15)
+shadow.Size = UDim2.new(1, 30, 1, 30)
+shadow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.5
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 10, 10)
+shadow.ZIndex = 0
+shadow.Parent = mainFrame
 
 -- Add UICorner
 local mainCorner = Instance.new("UICorner")
@@ -39,12 +54,13 @@ mainCorner.Parent = mainFrame
 local mainStroke = Instance.new("UIStroke")
 mainStroke.Color = Color3.fromRGB(0, 217, 255)
 mainStroke.Thickness = 2
+mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 mainStroke.Parent = mainFrame
 
 -- Header
 local header = Instance.new("Frame")
 header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 60)
+header.Size = UDim2.new(1, 0, 0, 70)
 header.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
 header.BorderSizePixel = 0
 header.Parent = mainFrame
@@ -53,40 +69,59 @@ local headerCorner = Instance.new("UICorner")
 headerCorner.CornerRadius = UDim.new(0, 12)
 headerCorner.Parent = header
 
+-- Fix bottom corners
+local headerFix = Instance.new("Frame")
+headerFix.Size = UDim2.new(1, 0, 0, 12)
+headerFix.Position = UDim2.new(0, 0, 1, -12)
+headerFix.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
+headerFix.BorderSizePixel = 0
+headerFix.Parent = header
+
 -- Header Title
 local title = Instance.new("TextLabel")
 title.Name = "Title"
-title.Size = UDim2.new(0.7, 0, 1, 0)
-title.Position = UDim2.new(0, 15, 0, 0)
+title.Size = UDim2.new(0.5, 0, 1, 0)
+title.Position = UDim2.new(0, 20, 0, 0)
 title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.Text = "NEXA MONITOR"
+title.Text = "NEXA"
 title.TextColor3 = Color3.fromRGB(15, 20, 25)
-title.TextSize = 24
+title.TextSize = 28
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
+
+local subtitle = Instance.new("TextLabel")
+subtitle.Size = UDim2.new(0.5, 0, 0, 20)
+subtitle.Position = UDim2.new(0, 20, 1, -25)
+subtitle.BackgroundTransparency = 1
+subtitle.Font = Enum.Font.Gotham
+subtitle.Text = "Job Monitor"
+subtitle.TextColor3 = Color3.fromRGB(15, 20, 25)
+subtitle.TextSize = 12
+subtitle.TextXAlignment = Enum.TextXAlignment.Left
+subtitle.Parent = header
 
 -- Connection Status Indicator
 local statusIndicator = Instance.new("TextLabel")
 statusIndicator.Name = "StatusIndicator"
-statusIndicator.Size = UDim2.new(0, 100, 0, 30)
-statusIndicator.Position = UDim2.new(1, -110, 0.5, -15)
+statusIndicator.Size = UDim2.new(0, 110, 0, 32)
+statusIndicator.Position = UDim2.new(1, -120, 0.5, -16)
 statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 statusIndicator.Font = Enum.Font.GothamBold
 statusIndicator.Text = "OFFLINE"
 statusIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusIndicator.TextSize = 12
+statusIndicator.TextSize = 13
 statusIndicator.Parent = header
 
 local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 6)
+statusCorner.CornerRadius = UDim.new(0, 8)
 statusCorner.Parent = statusIndicator
 
 -- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -40, 0, 15)
+closeButton.Size = UDim2.new(0, 35, 0, 35)
+closeButton.Position = UDim2.new(1, -45, 0, 17.5)
 closeButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 closeButton.Font = Enum.Font.GothamBold
 closeButton.Text = "X"
@@ -95,41 +130,42 @@ closeButton.TextSize = 18
 closeButton.Parent = mainFrame
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
 
 -- Job ID Input Section
 local jobIdFrame = Instance.new("Frame")
 jobIdFrame.Name = "JobIdFrame"
-jobIdFrame.Size = UDim2.new(1, -30, 0, 80)
-jobIdFrame.Position = UDim2.new(0, 15, 0, 75)
+jobIdFrame.Size = UDim2.new(1, -30, 0, 90)
+jobIdFrame.Position = UDim2.new(0, 15, 0, 85)
 jobIdFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 jobIdFrame.BorderSizePixel = 0
 jobIdFrame.Parent = mainFrame
 
 local jobIdCorner = Instance.new("UICorner")
-jobIdCorner.CornerRadius = UDim.new(0, 8)
+jobIdCorner.CornerRadius = UDim.new(0, 10)
 jobIdCorner.Parent = jobIdFrame
 
 local jobIdLabel = Instance.new("TextLabel")
 jobIdLabel.Name = "Label"
-jobIdLabel.Size = UDim2.new(1, -20, 0, 25)
-jobIdLabel.Position = UDim2.new(0, 10, 0, 5)
+jobIdLabel.Size = UDim2.new(1, -20, 0, 28)
+jobIdLabel.Position = UDim2.new(0, 12, 0, 8)
 jobIdLabel.BackgroundTransparency = 1
 jobIdLabel.Font = Enum.Font.GothamBold
-jobIdLabel.Text = "JOB ID (Auto-Fill)"
+jobIdLabel.Text = "🔑 JOB ID (Auto-Fill)"
 jobIdLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
-jobIdLabel.TextSize = 12
+jobIdLabel.TextSize = 13
 jobIdLabel.TextXAlignment = Enum.TextXAlignment.Left
 jobIdLabel.Parent = jobIdFrame
 
 local jobIdInput = Instance.new("TextBox")
 jobIdInput.Name = "Input"
-jobIdInput.Size = UDim2.new(1, -70, 0, 35)
-jobIdInput.Position = UDim2.new(0, 10, 0, 35)
+jobIdInput.Size = UDim2.new(1, -80, 0, 38)
+jobIdInput.Position = UDim2.new(0, 12, 0, 42)
 jobIdInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 jobIdInput.Font = Enum.Font.Gotham
 jobIdInput.PlaceholderText = "Waiting for job..."
+jobIdInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
 jobIdInput.Text = ""
 jobIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 jobIdInput.TextSize = 14
@@ -137,30 +173,30 @@ jobIdInput.ClearTextOnFocus = false
 jobIdInput.Parent = jobIdFrame
 
 local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.CornerRadius = UDim.new(0, 8)
 inputCorner.Parent = jobIdInput
 
 -- Join Button
 local joinButton = Instance.new("TextButton")
 joinButton.Name = "JoinButton"
-joinButton.Size = UDim2.new(0, 50, 0, 35)
-joinButton.Position = UDim2.new(1, -60, 0, 35)
+joinButton.Size = UDim2.new(0, 58, 0, 38)
+joinButton.Position = UDim2.new(1, -70, 0, 42)
 joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
 joinButton.Font = Enum.Font.GothamBold
 joinButton.Text = "JOIN"
 joinButton.TextColor3 = Color3.fromRGB(15, 20, 25)
-joinButton.TextSize = 12
+joinButton.TextSize = 13
 joinButton.Parent = jobIdFrame
 
 local joinCorner = Instance.new("UICorner")
-joinCorner.CornerRadius = UDim.new(0, 6)
+joinCorner.CornerRadius = UDim.new(0, 8)
 joinCorner.Parent = joinButton
 
 -- Jobs List Section
 local jobsLabel = Instance.new("TextLabel")
 jobsLabel.Name = "JobsLabel"
-jobsLabel.Size = UDim2.new(1, -30, 0, 25)
-jobsLabel.Position = UDim2.new(0, 15, 0, 165)
+jobsLabel.Size = UDim2.new(1, -30, 0, 28)
+jobsLabel.Position = UDim2.new(0, 15, 0, 185)
 jobsLabel.BackgroundTransparency = 1
 jobsLabel.Font = Enum.Font.GothamBold
 jobsLabel.Text = "📋 RECENT JOBS"
@@ -172,56 +208,97 @@ jobsLabel.Parent = mainFrame
 -- Scrolling Frame for Jobs
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Name = "JobsScrollFrame"
-scrollFrame.Size = UDim2.new(1, -30, 1, -210)
-scrollFrame.Position = UDim2.new(0, 15, 0, 195)
+scrollFrame.Size = UDim2.new(1, -30, 1, -230)
+scrollFrame.Position = UDim2.new(0, 15, 0, 218)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarThickness = 8
 scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 217, 255)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.Parent = mainFrame
 
 local scrollCorner = Instance.new("UICorner")
-scrollCorner.CornerRadius = UDim.new(0, 8)
+scrollCorner.CornerRadius = UDim.new(0, 10)
 scrollCorner.Parent = scrollFrame
 
 -- UIListLayout for jobs
 local listLayout = Instance.new("UIListLayout")
 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Padding = UDim.new(0, 8)
+listLayout.Padding = UDim.new(0, 10)
 listLayout.Parent = scrollFrame
+
+local listPadding = Instance.new("UIPadding")
+listPadding.PaddingTop = UDim.new(0, 8)
+listPadding.PaddingBottom = UDim.new(0, 8)
+listPadding.PaddingLeft = UDim.new(0, 8)
+listPadding.PaddingRight = UDim.new(0, 8)
+listPadding.Parent = scrollFrame
 
 -- Variables
 local isConnected = false
 local lastJobId = nil
 local jobsList = {}
+local connectionAttempts = 0
+
+-- Notification system
+local function showNotification(text, color)
+	local notif = Instance.new("TextLabel")
+	notif.Size = UDim2.new(0, 300, 0, 50)
+	notif.Position = UDim2.new(0.5, -150, 0, -60)
+	notif.BackgroundColor3 = color
+	notif.Font = Enum.Font.GothamBold
+	notif.Text = text
+	notif.TextColor3 = Color3.fromRGB(255, 255, 255)
+	notif.TextSize = 14
+	notif.Parent = screenGui
+	
+	local notifCorner = Instance.new("UICorner")
+	notifCorner.CornerRadius = UDim.new(0, 10)
+	notifCorner.Parent = notif
+	
+	-- Animate in
+	notif:TweenPosition(UDim2.new(0.5, -150, 0, 20), "Out", "Back", 0.5, true)
+	
+	-- Animate out after 3 seconds
+	task.wait(3)
+	notif:TweenPosition(UDim2.new(0.5, -150, 0, -60), "In", "Back", 0.3, true)
+	task.wait(0.3)
+	notif:Destroy()
+end
 
 -- Functions
 local function updateConnectionStatus(connected)
 	isConnected = connected
 	if connected then
-		statusIndicator.Text = "ONLINE"
+		statusIndicator.Text = "✓ ONLINE"
 		statusIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		connectionAttempts = 0
 	else
-		statusIndicator.Text = "OFFLINE"
+		statusIndicator.Text = "✗ OFFLINE"
 		statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 	end
 end
 
 local function createJobCard(jobData)
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -10, 0, 70)
+	card.Size = UDim2.new(1, -16, 0, 75)
 	card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	card.BorderSizePixel = 0
 	
 	local cardCorner = Instance.new("UICorner")
-	cardCorner.CornerRadius = UDim.new(0, 6)
+	cardCorner.CornerRadius = UDim.new(0, 8)
 	cardCorner.Parent = card
+	
+	local cardStroke = Instance.new("UIStroke")
+	cardStroke.Color = Color3.fromRGB(0, 217, 255)
+	cardStroke.Thickness = 1
+	cardStroke.Transparency = 0.7
+	cardStroke.Parent = card
 	
 	-- Job Name
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -15, 0, 25)
-	nameLabel.Position = UDim2.new(0, 8, 0, 5)
+	nameLabel.Size = UDim2.new(1, -16, 0, 22)
+	nameLabel.Position = UDim2.new(0, 8, 0, 6)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = jobData.name or "Unknown Job"
@@ -234,36 +311,36 @@ local function createJobCard(jobData)
 	-- Money Label
 	local moneyLabel = Instance.new("TextLabel")
 	moneyLabel.Size = UDim2.new(0.5, -10, 0, 20)
-	moneyLabel.Position = UDim2.new(0, 8, 0, 32)
+	moneyLabel.Position = UDim2.new(0, 8, 0, 30)
 	moneyLabel.BackgroundTransparency = 1
 	moneyLabel.Font = Enum.Font.Gotham
 	moneyLabel.Text = "💰 " .. (jobData.money or "$0")
 	moneyLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
-	moneyLabel.TextSize = 11
+	moneyLabel.TextSize = 12
 	moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 	moneyLabel.Parent = card
 	
 	-- Players Label
 	local playersLabel = Instance.new("TextLabel")
 	playersLabel.Size = UDim2.new(0.5, -10, 0, 20)
-	playersLabel.Position = UDim2.new(0.5, 0, 0, 32)
+	playersLabel.Position = UDim2.new(0.5, 0, 0, 30)
 	playersLabel.BackgroundTransparency = 1
 	playersLabel.Font = Enum.Font.Gotham
 	playersLabel.Text = "👥 " .. (jobData.players or "0") .. "/8"
 	playersLabel.TextColor3 = Color3.fromRGB(255, 211, 61)
-	playersLabel.TextSize = 11
+	playersLabel.TextSize = 12
 	playersLabel.TextXAlignment = Enum.TextXAlignment.Left
 	playersLabel.Parent = card
 	
-	-- Job ID Label (small)
+	-- Job ID Label
 	local idLabel = Instance.new("TextLabel")
-	idLabel.Size = UDim2.new(1, -15, 0, 15)
-	idLabel.Position = UDim2.new(0, 8, 1, -18)
+	idLabel.Size = UDim2.new(1, -16, 0, 16)
+	idLabel.Position = UDim2.new(0, 8, 1, -20)
 	idLabel.BackgroundTransparency = 1
 	idLabel.Font = Enum.Font.Gotham
 	idLabel.Text = "ID: " .. (jobData.jobId or "N/A")
 	idLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-	idLabel.TextSize = 9
+	idLabel.TextSize = 10
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
 	
@@ -288,35 +365,57 @@ local function updateJobsList(jobs)
 	end
 	
 	-- Update canvas size
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+	task.wait(0.1)
+	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
 end
 
 local function fetchJobs()
 	local success, result = pcall(function()
-		return HttpService:GetAsync(SERVER_URL .. "/jobs")
+		local response = game:HttpGet(SERVER_URL .. "/jobs", true)
+		return response
 	end)
 	
-	if success then
-		local data = HttpService:JSONDecode(result)
-		updateConnectionStatus(data.connected or false)
+	if success and result then
+		local decodeSuccess, data = pcall(function()
+			return HttpService:JSONDecode(result)
+		end)
 		
-		if data.jobs and #data.jobs > 0 then
-			updateJobsList(data.jobs)
+		if decodeSuccess and data then
+			updateConnectionStatus(data.connected or false)
 			
-			-- Auto-fill latest job ID
-			local latestJob = data.jobs[1]
-			if latestJob and latestJob.jobId and latestJob.jobId ~= lastJobId then
-				lastJobId = latestJob.jobId
-				jobIdInput.Text = latestJob.jobId
+			if data.jobs and #data.jobs > 0 then
+				updateJobsList(data.jobs)
 				
-				-- Visual feedback
-				jobIdInput.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-				task.wait(0.3)
-				jobIdInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+				-- Auto-fill latest job ID
+				local latestJob = data.jobs[1]
+				if latestJob and latestJob.jobId and latestJob.jobId ~= lastJobId then
+					lastJobId = latestJob.jobId
+					jobIdInput.Text = latestJob.jobId
+					
+					-- Visual feedback with tween
+					local originalColor = jobIdInput.BackgroundColor3
+					jobIdInput.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+					task.spawn(function()
+						showNotification("🔥 New Job: " .. latestJob.name, Color3.fromRGB(0, 217, 255))
+					end)
+					task.wait(0.5)
+					jobIdInput.BackgroundColor3 = originalColor
+				end
 			end
+			
+			connectionAttempts = 0
+		else
+			warn("Failed to decode JSON response")
+			updateConnectionStatus(false)
 		end
 	else
+		connectionAttempts = connectionAttempts + 1
 		updateConnectionStatus(false)
+		
+		if connectionAttempts == 1 then
+			warn("NEXA: Cannot connect to desktop server")
+			warn("Make sure nexa_monitor_server.py is running!")
+		end
 	end
 end
 
@@ -325,15 +424,18 @@ local function attemptJoin()
 	
 	if jobId == "" or jobId == "Waiting for job..." then
 		-- Flash red
-		jobIdInput.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		task.wait(0.3)
-		jobIdInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+		joinButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		joinButton.Text = "!"
+		task.wait(0.5)
+		joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
+		joinButton.Text = "JOIN"
 		return
 	end
 	
 	-- Disable button and show joining status
 	joinButton.Text = "..."
 	joinButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
+	joinButton.Enabled = false
 	
 	-- Attempt to join
 	local success, errorMsg = pcall(function()
@@ -342,32 +444,38 @@ local function attemptJoin()
 	
 	if not success then
 		-- Show error
-		joinButton.Text = "ERROR"
+		joinButton.Text = "ERR"
 		joinButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		task.wait(1)
+		showNotification("❌ Failed to join server", Color3.fromRGB(255, 68, 68))
+		task.wait(1.5)
 		joinButton.Text = "JOIN"
 		joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-		warn("Failed to join:", errorMsg)
+		joinButton.Enabled = true
+		warn("NEXA: Failed to join -", errorMsg)
 	end
 end
 
 -- Event Handlers
 closeButton.MouseButton1Click:Connect(function()
-	screenGui.Enabled = false
+	screenGui:Destroy()
 end)
 
 joinButton.MouseButton1Click:Connect(attemptJoin)
 
 -- Auto-join on Enter key
 jobIdInput.FocusLost:Connect(function(enterPressed)
-	if enterPressed then
+	if enterPressed and jobIdInput.Text ~= "" then
 		attemptJoin()
 	end
 end)
 
 -- Main Update Loop
 task.spawn(function()
-	while true do
+	-- Initial message
+	showNotification("🚀 NEXA Monitor Starting...", Color3.fromRGB(0, 217, 255))
+	task.wait(1)
+	
+	while screenGui and screenGui.Parent do
 		fetchJobs()
 		task.wait(UPDATE_INTERVAL)
 	end
@@ -376,4 +484,5 @@ end)
 -- Initial fetch
 fetchJobs()
 
-print("NEXA Job Monitor UI loaded successfully!")
+print("✅ NEXA Job Monitor loaded successfully!")
+print("🌐 Connecting to desktop server at:", SERVER_URL)
