@@ -173,16 +173,21 @@ local function fetchJobs()
     end)
     
     if success then
+        print("✅ Got response from server")
+        print("Response length: " .. #result)
+        print("First 200 chars: " .. string.sub(result, 1, 200))
+        
         local decodeSuccess, jobs = pcall(function()
             return HttpService:JSONDecode(result)
         end)
         
         if decodeSuccess then
             statusDot.TextColor3 = Color3.fromRGB(0, 255, 136)
+            print("✅ Decoded " .. #jobs .. " jobs")
             updateJobList(jobs)
             return true
         else
-            warn("[Nexa] Failed to decode JSON")
+            warn("[Nexa] Failed to decode JSON: " .. tostring(jobs))
             return false
         end
     else
@@ -199,4 +204,3 @@ print("🔄 Fetching from: " .. JOB_DATA_URL)
 while wait(CHECK_INTERVAL) do
     fetchJobs()
 end
-
