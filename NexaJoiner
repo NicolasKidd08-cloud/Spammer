@@ -5,13 +5,16 @@ local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- Try multiple file paths for Seliware
+-- Try multiple file paths for different executors
 local JOBS_FILES = {
-    "workspace/nexa_jobs.json",
-    "nexa_jobs.json",
-    "Seliware/workspace/nexa_jobs.json",
-    "../workspace/nexa_jobs.json",
+    "workspace/nexa_jobs.json",      -- Most executors
+    "nexa_jobs.json",                 -- Some executors
+    "../workspace/nexa_jobs.json",    -- Alt path
+    "autoexec/nexa_jobs.json",        -- Some use autoexec
 }
+
+-- OR manually set your path here:
+-- local JOBS_FILE = "workspace/nexa_jobs.json"  -- Change this to your executor's path
 
 local JOBS_FILE = nil  -- Will be set when we find the file
 
