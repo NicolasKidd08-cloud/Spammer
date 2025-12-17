@@ -1,9 +1,10 @@
--- NEXA ROBLOX JOB MONITOR - FIXED VERSION
--- No function ordering errors
+-- NEXA ROBLOX JOB MONITOR - COMPLETE VERSION
+-- Features: Auto-join, Manual click, Spammer, Keybind settings
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -11,6 +12,14 @@ local playerGui = player:WaitForChild("PlayerGui")
 local SERVER_URL = "http://localhost:8080"
 local UPDATE_INTERVAL = 3
 local PLACE_ID = game.PlaceId
+
+-- Settings
+local Settings = {
+	ToggleKeybind = Enum.KeyCode.RightControl,
+	AutoJoinNew = true,
+	SpammerEnabled = false,
+	SpammerDelay = 2
+}
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -23,12 +32,13 @@ screenGui.Parent = playerGui
 -- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 420, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -275)
+mainFrame.Size = UDim2.new(0, 420, 0, 600)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -300)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
+mainFrame.Visible = true
 mainFrame.Parent = screenGui
 
 local mainCorner = Instance.new("UICorner")
@@ -111,6 +121,21 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
 
+-- Settings Button
+local settingsButton = Instance.new("TextButton")
+settingsButton.Size = UDim2.new(0, 35, 0, 35)
+settingsButton.Position = UDim2.new(1, -90, 0, 17.5)
+settingsButton.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+settingsButton.Font = Enum.Font.GothamBold
+settingsButton.Text = "⚙"
+settingsButton.TextColor3 = Color3.fromRGB(0, 217, 255)
+settingsButton.TextSize = 18
+settingsButton.Parent = mainFrame
+
+local settingsCorner = Instance.new("UICorner")
+settingsCorner.CornerRadius = UDim.new(0, 8)
+settingsCorner.Parent = settingsButton
+
 -- Job ID Section
 local jobIdFrame = Instance.new("Frame")
 jobIdFrame.Size = UDim2.new(1, -30, 0, 90)
@@ -128,7 +153,7 @@ jobIdLabel.Size = UDim2.new(1, -20, 0, 28)
 jobIdLabel.Position = UDim2.new(0, 12, 0, 8)
 jobIdLabel.BackgroundTransparency = 1
 jobIdLabel.Font = Enum.Font.GothamBold
-jobIdLabel.Text = "🔑 JOB ID (Auto-Join)"
+jobIdLabel.Text = "🔑 JOB ID (Click jobs to join)"
 jobIdLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
 jobIdLabel.TextSize = 13
 jobIdLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -160,21 +185,58 @@ inputPadding.PaddingLeft = UDim.new(0, 8)
 inputPadding.PaddingRight = UDim.new(0, 8)
 inputPadding.Parent = jobIdInput
 
+-- Spammer Toggle
+local spammerFrame = Instance.new("Frame")
+spammerFrame.Size = UDim2.new(1, -30, 0, 45)
+spammerFrame.Position = UDim2.new(0, 15, 0, 185)
+spammerFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+spammerFrame.BorderSizePixel = 0
+spammerFrame.Parent = mainFrame
+
+local spammerCorner = Instance.new("UICorner")
+spammerCorner.CornerRadius = UDim.new(0, 10)
+spammerCorner.Parent = spammerFrame
+
+local spammerLabel = Instance.new("TextLabel")
+spammerLabel.Size = UDim2.new(0.7, 0, 1, 0)
+spammerLabel.Position = UDim2.new(0, 12, 0, 0)
+spammerLabel.BackgroundTransparency = 1
+spammerLabel.Font = Enum.Font.GothamBold
+spammerLabel.Text = "🔄 AUTO-JOIN SPAMMER"
+spammerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+spammerLabel.TextSize = 13
+spammerLabel.TextXAlignment = Enum.TextXAlignment.Left
+spammerLabel.Parent = spammerFrame
+
+local spammerToggle = Instance.new("TextButton")
+spammerToggle.Size = UDim2.new(0, 70, 0, 30)
+spammerToggle.Position = UDim2.new(1, -80, 0.5, -15)
+spammerToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+spammerToggle.Font = Enum.Font.GothamBold
+spammerToggle.Text = "OFF"
+spammerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+spammerToggle.TextSize = 12
+spammerToggle.Parent = spammerFrame
+
+local spammerToggleCorner = Instance.new("UICorner")
+spammerToggleCorner.CornerRadius = UDim.new(0, 8)
+spammerToggleCorner.Parent = spammerToggle
+
 -- Jobs List
 local jobsLabel = Instance.new("TextLabel")
 jobsLabel.Size = UDim2.new(1, -30, 0, 28)
-jobsLabel.Position = UDim2.new(0, 15, 0, 185)
+jobsLabel.Position = UDim2.new(0, 15, 0, 240)
 jobsLabel.BackgroundTransparency = 1
 jobsLabel.Font = Enum.Font.GothamBold
-jobsLabel.Text = "📋 RECENT JOBS"
+jobsLabel.Text = "📋 RECENT JOBS (Click to join)"
 jobsLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
 jobsLabel.TextSize = 14
 jobsLabel.TextXAlignment = Enum.TextXAlignment.Left
 jobsLabel.Parent = mainFrame
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -30, 1, -230)
-scrollFrame.Position = UDim2.new(0, 15, 0, 218)
+scrollFrame.Size = UDim2.new(1, -30, 1, -285)
+scrollFrame.Position = UDim2.new(0, 15, 0, 273)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 8
@@ -198,11 +260,186 @@ listPadding.PaddingLeft = UDim.new(0, 8)
 listPadding.PaddingRight = UDim.new(0, 8)
 listPadding.Parent = scrollFrame
 
+-- Settings Panel
+local settingsPanel = Instance.new("Frame")
+settingsPanel.Name = "SettingsPanel"
+settingsPanel.Size = UDim2.new(0, 350, 0, 300)
+settingsPanel.Position = UDim2.new(0.5, -175, 0.5, -150)
+settingsPanel.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+settingsPanel.BorderSizePixel = 0
+settingsPanel.Visible = false
+settingsPanel.Parent = screenGui
+
+local settingsPanelCorner = Instance.new("UICorner")
+settingsPanelCorner.CornerRadius = UDim.new(0, 12)
+settingsPanelCorner.Parent = settingsPanel
+
+local settingsPanelStroke = Instance.new("UIStroke")
+settingsPanelStroke.Color = Color3.fromRGB(0, 217, 255)
+settingsPanelStroke.Thickness = 2
+settingsPanelStroke.Parent = settingsPanel
+
+-- Settings Header
+local settingsHeader = Instance.new("Frame")
+settingsHeader.Size = UDim2.new(1, 0, 0, 50)
+settingsHeader.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
+settingsHeader.BorderSizePixel = 0
+settingsHeader.Parent = settingsPanel
+
+local settingsHeaderCorner = Instance.new("UICorner")
+settingsHeaderCorner.CornerRadius = UDim.new(0, 12)
+settingsHeaderCorner.Parent = settingsHeader
+
+local settingsHeaderFix = Instance.new("Frame")
+settingsHeaderFix.Size = UDim2.new(1, 0, 0, 12)
+settingsHeaderFix.Position = UDim2.new(0, 0, 1, -12)
+settingsHeaderFix.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
+settingsHeaderFix.BorderSizePixel = 0
+settingsHeaderFix.Parent = settingsHeader
+
+local settingsTitle = Instance.new("TextLabel")
+settingsTitle.Size = UDim2.new(1, -50, 1, 0)
+settingsTitle.Position = UDim2.new(0, 15, 0, 0)
+settingsTitle.BackgroundTransparency = 1
+settingsTitle.Font = Enum.Font.GothamBold
+settingsTitle.Text = "⚙ SETTINGS"
+settingsTitle.TextColor3 = Color3.fromRGB(15, 20, 25)
+settingsTitle.TextSize = 20
+settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
+settingsTitle.Parent = settingsHeader
+
+local settingsCloseButton = Instance.new("TextButton")
+settingsCloseButton.Size = UDim2.new(0, 30, 0, 30)
+settingsCloseButton.Position = UDim2.new(1, -40, 0, 10)
+settingsCloseButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+settingsCloseButton.Font = Enum.Font.GothamBold
+settingsCloseButton.Text = "X"
+settingsCloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+settingsCloseButton.TextSize = 16
+settingsCloseButton.Parent = settingsPanel
+
+local settingsCloseCorner = Instance.new("UICorner")
+settingsCloseCorner.CornerRadius = UDim.new(0, 6)
+settingsCloseCorner.Parent = settingsCloseButton
+
+-- Keybind Setting
+local keybindFrame = Instance.new("Frame")
+keybindFrame.Size = UDim2.new(1, -30, 0, 70)
+keybindFrame.Position = UDim2.new(0, 15, 0, 65)
+keybindFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+keybindFrame.BorderSizePixel = 0
+keybindFrame.Parent = settingsPanel
+
+local keybindCorner = Instance.new("UICorner")
+keybindCorner.CornerRadius = UDim.new(0, 8)
+keybindCorner.Parent = keybindFrame
+
+local keybindLabel = Instance.new("TextLabel")
+keybindLabel.Size = UDim2.new(1, -20, 0, 25)
+keybindLabel.Position = UDim2.new(0, 10, 0, 8)
+keybindLabel.BackgroundTransparency = 1
+keybindLabel.Font = Enum.Font.GothamBold
+keybindLabel.Text = "🎮 Toggle UI Keybind"
+keybindLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
+keybindLabel.TextSize = 13
+keybindLabel.TextXAlignment = Enum.TextXAlignment.Left
+keybindLabel.Parent = keybindFrame
+
+local keybindButton = Instance.new("TextButton")
+keybindButton.Size = UDim2.new(1, -20, 0, 30)
+keybindButton.Position = UDim2.new(0, 10, 0, 32)
+keybindButton.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+keybindButton.Font = Enum.Font.Gotham
+keybindButton.Text = "RightControl"
+keybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+keybindButton.TextSize = 12
+keybindButton.Parent = keybindFrame
+
+local keybindButtonCorner = Instance.new("UICorner")
+keybindButtonCorner.CornerRadius = UDim.new(0, 6)
+keybindButtonCorner.Parent = keybindButton
+
+-- Auto-Join New Jobs Toggle
+local autoJoinFrame = Instance.new("Frame")
+autoJoinFrame.Size = UDim2.new(1, -30, 0, 50)
+autoJoinFrame.Position = UDim2.new(0, 15, 0, 145)
+autoJoinFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+autoJoinFrame.BorderSizePixel = 0
+autoJoinFrame.Parent = settingsPanel
+
+local autoJoinCorner = Instance.new("UICorner")
+autoJoinCorner.CornerRadius = UDim.new(0, 8)
+autoJoinCorner.Parent = autoJoinFrame
+
+local autoJoinLabel = Instance.new("TextLabel")
+autoJoinLabel.Size = UDim2.new(0.7, 0, 1, 0)
+autoJoinLabel.Position = UDim2.new(0, 10, 0, 0)
+autoJoinLabel.BackgroundTransparency = 1
+autoJoinLabel.Font = Enum.Font.GothamBold
+autoJoinLabel.Text = "⚡ Auto-Join New Jobs"
+autoJoinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoJoinLabel.TextSize = 13
+autoJoinLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoJoinLabel.Parent = autoJoinFrame
+
+local autoJoinToggle = Instance.new("TextButton")
+autoJoinToggle.Size = UDim2.new(0, 70, 0, 30)
+autoJoinToggle.Position = UDim2.new(1, -80, 0.5, -15)
+autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+autoJoinToggle.Font = Enum.Font.GothamBold
+autoJoinToggle.Text = "ON"
+autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+autoJoinToggle.TextSize = 12
+autoJoinToggle.Parent = autoJoinFrame
+
+local autoJoinToggleCorner = Instance.new("UICorner")
+autoJoinToggleCorner.CornerRadius = UDim.new(0, 8)
+autoJoinToggleCorner.Parent = autoJoinToggle
+
+-- Spammer Delay Setting
+local delayFrame = Instance.new("Frame")
+delayFrame.Size = UDim2.new(1, -30, 0, 70)
+delayFrame.Position = UDim2.new(0, 15, 0, 205)
+delayFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+delayFrame.BorderSizePixel = 0
+delayFrame.Parent = settingsPanel
+
+local delayCorner = Instance.new("UICorner")
+delayCorner.CornerRadius = UDim.new(0, 8)
+delayCorner.Parent = delayFrame
+
+local delayLabel = Instance.new("TextLabel")
+delayLabel.Size = UDim2.new(1, -20, 0, 25)
+delayLabel.Position = UDim2.new(0, 10, 0, 8)
+delayLabel.BackgroundTransparency = 1
+delayLabel.Font = Enum.Font.GothamBold
+delayLabel.Text = "⏱ Spammer Delay (seconds)"
+delayLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
+delayLabel.TextSize = 13
+delayLabel.TextXAlignment = Enum.TextXAlignment.Left
+delayLabel.Parent = delayFrame
+
+local delayInput = Instance.new("TextBox")
+delayInput.Size = UDim2.new(1, -20, 0, 30)
+delayInput.Position = UDim2.new(0, 10, 0, 32)
+delayInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+delayInput.Font = Enum.Font.Gotham
+delayInput.Text = "2"
+delayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+delayInput.TextSize = 12
+delayInput.Parent = delayFrame
+
+local delayInputCorner = Instance.new("UICorner")
+delayInputCorner.CornerRadius = UDim.new(0, 6)
+delayInputCorner.Parent = delayInput
+
 -- Variables
 local isConnected = false
 local lastJobId = nil
 local connectionAttempts = 0
 local joining = false
+local spammerRunning = false
+local listeningForKeybind = false
 
 -- Notification system
 local function showNotification(text, color)
@@ -302,21 +539,39 @@ local function createJobCard(jobData)
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
 	
-	-- Click to fill job ID and auto-join
+	-- Click to instant join (no delay, no spam)
 	card.MouseButton1Click:Connect(function()
-		if jobData.jobId then
+		if jobData.jobId and not joining then
 			jobIdInput.Text = jobData.jobId
-			showNotification("📋 Selected: " .. jobData.name, Color3.fromRGB(0, 217, 255))
+			showNotification("🚀 Joining: " .. jobData.name, Color3.fromRGB(0, 217, 255))
 			
 			-- Flash card
 			card.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
 			task.wait(0.2)
 			card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 			
-			-- Auto-join after selecting
-			task.delay(0.5, function()
-				attemptJoin()
+			-- Immediate join
+			joining = true
+			
+			print("NEXA: Manual join - ", jobData.jobId)
+			local success, errorMsg = pcall(function()
+				TeleportService:TeleportToPlaceInstance(PLACE_ID, jobData.jobId, player)
 			end)
+			
+			if not success then
+				local errorDisplay = "Failed to join"
+				if string.find(tostring(errorMsg), "not found") then
+					errorDisplay = "Server not found"
+				elseif string.find(tostring(errorMsg), "full") then
+					errorDisplay = "Server full"
+				end
+				
+				showNotification("❌ " .. errorDisplay, Color3.fromRGB(255, 68, 68))
+				task.wait(2)
+				joining = false
+			else
+				print("NEXA: Teleporting...")
+			end
 		end
 	end)
 	
@@ -349,12 +604,9 @@ local function updateJobsList(jobs)
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
 end
 
--- ATTEMPT JOIN FUNCTION - Defined early so it can be called by auto-join
-local function attemptJoin()
-	if joining then 
-		print("NEXA: Already joining, please wait...")
-		return 
-	end
+-- AUTO-JOIN FUNCTION (for new jobs from desktop)
+local function autoJoinNewJob()
+	if not Settings.AutoJoinNew or joining then return end
 	
 	local jobId = jobIdInput.Text
 	jobId = string.gsub(jobId, "^%s*(.-)%s*$", "%1")
@@ -365,9 +617,7 @@ local function attemptJoin()
 	
 	joining = true
 	
-	print("NEXA: Attempting to join server...")
-	print("Place ID:", PLACE_ID)
-	print("Job ID:", jobId)
+	print("NEXA: Auto-joining new job -", jobId)
 	
 	local success, errorMsg = pcall(function()
 		TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, player)
@@ -379,24 +629,47 @@ local function attemptJoin()
 			errorDisplay = "Server not found"
 		elseif string.find(tostring(errorMsg), "full") then
 			errorDisplay = "Server full"
-		elseif string.find(tostring(errorMsg), "Invalid") then
-			errorDisplay = "Invalid Job ID"
 		end
 		
 		showNotification("❌ " .. errorDisplay, Color3.fromRGB(255, 68, 68))
-		print("NEXA: Join failed -", errorMsg)
+		print("NEXA: Auto-join failed -", errorMsg)
 		task.wait(2)
 		joining = false
 	else
 		print("NEXA: Teleporting...")
-		-- Will teleport, reset after delay in case it fails
-		task.delay(3, function()
-			joining = false
-		end)
 	end
 end
 
--- FETCH JOBS FUNCTION - Now attemptJoin is already defined
+-- SPAMMER FUNCTION (keeps trying until disabled)
+local function startSpammer()
+	spammerRunning = true
+	
+	task.spawn(function()
+		while spammerRunning and Settings.SpammerEnabled do
+			local jobId = jobIdInput.Text
+			jobId = string.gsub(jobId, "^%s*(.-)%s*$", "%1")
+			
+			if jobId ~= "" and jobId ~= "Waiting for job..." then
+				print("NEXA: Spammer attempt -", jobId)
+				
+				pcall(function()
+					TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, player)
+				end)
+			end
+			
+			task.wait(Settings.SpammerDelay)
+		end
+		
+		spammerRunning = false
+	end)
+end
+
+local function stopSpammer()
+	spammerRunning = false
+	Settings.SpammerEnabled = false
+end
+
+-- FETCH JOBS FUNCTION
 local function fetchJobs()
 	local success, result = pcall(function()
 		return game:HttpGet(SERVER_URL .. "/jobs", true)
@@ -426,10 +699,11 @@ local function fetchJobs()
 					task.wait(0.5)
 					jobIdInput.BackgroundColor3 = originalColor
 					
-					-- AUTO-JOIN after visual feedback
-					task.delay(0.3, function()
-						attemptJoin()
-					end)
+					-- Auto-join if enabled
+					if Settings.AutoJoinNew then
+						task.wait(0.3)
+						autoJoinNewJob()
+					end
 				end
 			end
 			
@@ -451,13 +725,79 @@ end
 
 -- Event Handlers
 closeButton.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
+	mainFrame.Visible = false
 end)
 
--- Press Enter to manually trigger join
-jobIdInput.FocusLost:Connect(function(enterPressed)
-	if enterPressed and jobIdInput.Text ~= "" then
-		attemptJoin()
+settingsButton.MouseButton1Click:Connect(function()
+	settingsPanel.Visible = not settingsPanel.Visible
+end)
+
+settingsCloseButton.MouseButton1Click:Connect(function()
+	settingsPanel.Visible = false
+end)
+
+spammerToggle.MouseButton1Click:Connect(function()
+	Settings.SpammerEnabled = not Settings.SpammerEnabled
+	
+	if Settings.SpammerEnabled then
+		spammerToggle.Text = "ON"
+		spammerToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		spammerToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+		showNotification("🔄 Spammer ENABLED", Color3.fromRGB(0, 255, 136))
+		startSpammer()
+	else
+		spammerToggle.Text = "OFF"
+		spammerToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		spammerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		showNotification("⏹ Spammer DISABLED", Color3.fromRGB(255, 68, 68))
+		stopSpammer()
+	end
+end)
+
+autoJoinToggle.MouseButton1Click:Connect(function()
+	Settings.AutoJoinNew = not Settings.AutoJoinNew
+	
+	if Settings.AutoJoinNew then
+		autoJoinToggle.Text = "ON"
+		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+		showNotification("⚡ Auto-Join ON", Color3.fromRGB(0, 255, 136))
+	else
+		autoJoinToggle.Text = "OFF"
+		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		showNotification("⏹ Auto-Join OFF", Color3.fromRGB(255, 68, 68))
+	end
+end)
+
+keybindButton.MouseButton1Click:Connect(function()
+	keybindButton.Text = "Press any key..."
+	keybindButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
+	listeningForKeybind = true
+end)
+
+delayInput.FocusLost:Connect(function()
+	local value = tonumber(delayInput.Text)
+	if value and value > 0 then
+		Settings.SpammerDelay = value
+		showNotification("⏱ Delay set to " .. value .. "s", Color3.fromRGB(0, 217, 255))
+	else
+		delayInput.Text = tostring(Settings.SpammerDelay)
+	end
+end)
+
+-- Keybind listener
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if listeningForKeybind then
+		Settings.ToggleKeybind = input.KeyCode
+		keybindButton.Text = input.KeyCode.Name
+		keybindButton.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
+		listeningForKeybind = false
+		showNotification("🎮 Keybind set to " .. input.KeyCode.Name, Color3.fromRGB(0, 217, 255))
+	elseif input.KeyCode == Settings.ToggleKeybind then
+		mainFrame.Visible = not mainFrame.Visible
 	end
 end)
 
@@ -476,7 +816,5 @@ fetchJobs()
 
 print("✅ NEXA Job Monitor loaded successfully!")
 print("🌐 Connecting to desktop server at:", SERVER_URL)
-
-
-
+print("🎮 Press", Settings.ToggleKeybind.Name, "to toggle UI")
 
