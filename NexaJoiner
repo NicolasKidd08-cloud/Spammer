@@ -419,7 +419,11 @@ local function fetchJobs()
 	end
 end
 
+local joining = false
+
 local function attemptJoin()
+	if joining then return end
+	
 	local jobId = jobIdInput.Text
 	
 	if jobId == "" or jobId == "Waiting for job..." then
@@ -433,9 +437,9 @@ local function attemptJoin()
 	end
 	
 	-- Disable button and show joining status
+	joining = true
 	joinButton.Text = "..."
 	joinButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
-	joinButton.Enabled = false
 	
 	-- Attempt to join
 	local success, errorMsg = pcall(function()
@@ -450,7 +454,7 @@ local function attemptJoin()
 		task.wait(1.5)
 		joinButton.Text = "JOIN"
 		joinButton.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-		joinButton.Enabled = true
+		joining = false
 		warn("NEXA: Failed to join -", errorMsg)
 	end
 end
@@ -486,3 +490,4 @@ fetchJobs()
 
 print("✅ NEXA Job Monitor loaded successfully!")
 print("🌐 Connecting to desktop server at:", SERVER_URL)
+
