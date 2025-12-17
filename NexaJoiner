@@ -1,662 +1,343 @@
--- Nexa Joiner - Local File Version (Works with ANY executor!)
--- No HTTP needed - uses local files!
+import tkinter as tk
+from tkinter import scrolledtext
+import requests
+import json
+import threading
+import time
+from datetime import datetime
+import re
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse
 
-local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+APP_DIR = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+JOBS_FILE = os.path.join(APP_DIR, "nexa_jobs.json")
 
--- Try multiple file paths for different executors
-local JOBS_FILES = {
-    "workspace/nexa_jobs.json",      -- Most executors
-    "nexa_jobs.json",                 -- Some executors
-    "../workspace/nexa_jobs.json",    -- Alt path
-    "autoexec/nexa_jobs.json",        -- Some use autoexec
-}
+# HARDCODED CREDENTIALS
+DISCORD_TOKEN = "MTAxMzc4MTg3Njg0ODIwMTc5OQ.GVaH2v.D9pMCY8apYHUYIxma8rrFX3JGWTrpsra5Qleig"
+CHANNEL_ID = "1401775181025775738"
 
--- OR manually set your path here:
--- local JOBS_FILE = "workspace/nexa_jobs.json"  -- Change this to your executor's path
-
-local JOBS_FILE = nil  -- Will be set when we find the file
-
--- Configuration
-local GAME_ID = 18901165922
-local CHECK_INTERVAL = 2
-
--- Variables
-local jobLogs = {}
-local currentMode = "manual"
-local isJoining = false
-local processedJobs = {}
-
--- Wait for player
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-
-wait(1)
-
--- Remove existing
-pcall(function()
-    if playerGui:FindFirstChild("NexaJoiner") then 
-        playerGui.NexaJoiner:Destroy() 
-    end
-    if playerGui:FindFirstChild("BackgroundStatus") then 
-        playerGui.BackgroundStatus:Destroy() 
-    end
-end)
-
-wait(0.5)
-
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("✅ Nexa Joiner Loading (File Mode)...")
-print("🔍 Searching for jobs file...")
-
--- Try to find the jobs file
-if canReadFiles then
-    for _, path in ipairs(JOBS_FILES) do
-        local success = pcall(function()
-            readfile(path)
-        end)
-        
-        if success then
-            JOBS_FILE = path
-            print("✅ Found jobs file at: " .. path)
-            break
-        else
-            print("❌ Not found: " .. path)
-        end
-    end
-    
-    if not JOBS_FILE then
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("❌ JOBS FILE NOT FOUND!")
-        print("Tried these paths:")
-        for _, path in ipairs(JOBS_FILES) do
-            print("  - " .. path)
-        end
-        print("")
-        print("💡 SOLUTION:")
-        print("1. Check Python app - where is it saving?")
-        print("2. In Seliware, try: print(getworkspace())")
-        print("3. Copy nexa_jobs.json to that folder manually")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    end
-else
-    print("❌ readfile not supported!")
-end
-
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
--- Check if readfile exists
-local canReadFiles = false
-if readfile and writefile then
-    canReadFiles = true
-    print("[Nexa] ✅ File functions found!")
-else
-    warn("[Nexa] ❌ Your executor doesn't support readfile/writefile!")
-    warn("[Nexa] This won't work - try a different executor!")
-end
-
--- Main GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NexaJoiner"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.DisplayOrder = 100
-screenGui.Parent = playerGui
-
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 450, 0, 600)
-mainFrame.Position = UDim2.new(0.5, -225, 0.5, -300)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 35, 25)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainFrame
-
--- Make draggable
-local dragging, dragInput, dragStart, startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-mainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-mainFrame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        updateDrag(input)
-    end
-end)
-
--- Title Bar
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 50)
-titleBar.BackgroundColor3 = Color3.fromRGB(35, 200, 100)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
-titleCorner.Parent = titleBar
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Size = UDim2.new(1, -60, 1, 0)
-titleLabel.Position = UDim2.new(0, 10, 0, 0)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "NEXA JOINER"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Font = Enum.Font.GothamBold
-titleLabel.TextSize = 24
-titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-titleLabel.Parent = titleBar
-
--- Close Button
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 40, 0, 40)
-closeButton.Position = UDim2.new(1, -45, 0, 5)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 20
-closeButton.Parent = titleBar
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = closeButton
-
-closeButton.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
-    pcall(function()
-        playerGui:FindFirstChild("BackgroundStatus"):Destroy()
-    end)
-end)
-
--- Info Label
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(1, -40, 0, 40)
-infoLabel.Position = UDim2.new(0, 20, 0, 60)
-infoLabel.BackgroundColor3 = Color3.fromRGB(35, 45, 35)
-infoLabel.Text = "📁 Reading jobs file..."
-infoLabel.TextColor3 = Color3.fromRGB(255, 170, 100)
-infoLabel.Font = Enum.Font.GothamBold
-infoLabel.TextSize = 12
-infoLabel.Parent = mainFrame
-
-local infoCorner = Instance.new("UICorner")
-infoCorner.CornerRadius = UDim.new(0, 8)
-infoCorner.Parent = infoLabel
-
--- Auto Join Button
-local autoButton = Instance.new("TextButton")
-autoButton.Size = UDim2.new(1, -40, 0, 50)
-autoButton.Position = UDim2.new(0, 20, 0, 120)
-autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-autoButton.Text = "🎯 AUTO JOIN (OFF)"
-autoButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoButton.Font = Enum.Font.GothamBold
-autoButton.TextSize = 16
-autoButton.Parent = mainFrame
-
-local autoCorner = Instance.new("UICorner")
-autoCorner.CornerRadius = UDim.new(0, 8)
-autoCorner.Parent = autoButton
-
--- Background Mode Button
-local backgroundButton = Instance.new("TextButton")
-backgroundButton.Size = UDim2.new(1, -40, 0, 50)
-backgroundButton.Position = UDim2.new(0, 20, 0, 180)
-backgroundButton.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
-backgroundButton.Text = "👻 BACKGROUND MODE"
-backgroundButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-backgroundButton.Font = Enum.Font.GothamBold
-backgroundButton.TextSize = 16
-backgroundButton.Parent = mainFrame
-
-local backgroundCorner = Instance.new("UICorner")
-backgroundCorner.CornerRadius = UDim.new(0, 8)
-backgroundCorner.Parent = backgroundButton
-
--- Stop Button
-local stopButton = Instance.new("TextButton")
-stopButton.Size = UDim2.new(1, -40, 0, 40)
-stopButton.Position = UDim2.new(0, 20, 0, 240)
-stopButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-stopButton.Text = "⏹️ STOP ALL"
-stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-stopButton.Font = Enum.Font.GothamBold
-stopButton.TextSize = 14
-stopButton.Parent = mainFrame
-
-local stopCorner = Instance.new("UICorner")
-stopCorner.CornerRadius = UDim.new(0, 8)
-stopCorner.Parent = stopButton
-
--- Status Label
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -40, 0, 30)
-statusLabel.Position = UDim2.new(0, 20, 0, 295)
-statusLabel.BackgroundTransparency = 1
-statusLabel.Text = "Status: Ready"
-statusLabel.TextColor3 = Color3.fromRGB(200, 255, 200)
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextSize = 12
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = mainFrame
-
--- Job List
-local jobListFrame = Instance.new("ScrollingFrame")
-jobListFrame.Size = UDim2.new(1, -40, 0, 260)
-jobListFrame.Position = UDim2.new(0, 20, 0, 330)
-jobListFrame.BackgroundColor3 = Color3.fromRGB(35, 45, 35)
-jobListFrame.BorderSizePixel = 0
-jobListFrame.ScrollBarThickness = 6
-jobListFrame.Parent = mainFrame
-
-local listCorner = Instance.new("UICorner")
-listCorner.CornerRadius = UDim.new(0, 8)
-listCorner.Parent = jobListFrame
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.Padding = UDim.new(0, 5)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Parent = jobListFrame
-
--- Background Status
-local bgScreenGui = Instance.new("ScreenGui")
-bgScreenGui.Name = "BackgroundStatus"
-bgScreenGui.ResetOnSpawn = false
-bgScreenGui.IgnoreGuiInset = true
-bgScreenGui.DisplayOrder = 99
-bgScreenGui.Parent = playerGui
-
-local bgStatusFrame = Instance.new("Frame")
-bgStatusFrame.Size = UDim2.new(0, 220, 0, 60)
-bgStatusFrame.Position = UDim2.new(1, -230, 1, -70)
-bgStatusFrame.BackgroundColor3 = Color3.fromRGB(20, 25, 20)
-bgStatusFrame.BackgroundTransparency = 0.3
-bgStatusFrame.BorderSizePixel = 0
-bgStatusFrame.Active = false
-bgStatusFrame.Visible = false
-bgStatusFrame.Parent = bgScreenGui
-
-local bgStatusCorner = Instance.new("UICorner")
-bgStatusCorner.CornerRadius = UDim.new(0, 8)
-bgStatusCorner.Parent = bgStatusFrame
-
-local bgStatusLabel = Instance.new("TextLabel")
-bgStatusLabel.Size = UDim2.new(1, -10, 0.5, 0)
-bgStatusLabel.Position = UDim2.new(0, 5, 0, 5)
-bgStatusLabel.BackgroundTransparency = 1
-bgStatusLabel.Text = "🟢 Background: Active"
-bgStatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-bgStatusLabel.Font = Enum.Font.GothamBold
-bgStatusLabel.TextSize = 11
-bgStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-bgStatusLabel.Active = false
-bgStatusLabel.Parent = bgStatusFrame
-
-local bgCurrentJobLabel = Instance.new("TextLabel")
-bgCurrentJobLabel.Size = UDim2.new(1, -10, 0.5, -5)
-bgCurrentJobLabel.Position = UDim2.new(0, 5, 0.5, 0)
-bgCurrentJobLabel.BackgroundTransparency = 1
-bgCurrentJobLabel.Text = "Waiting..."
-bgCurrentJobLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-bgCurrentJobLabel.Font = Enum.Font.Gotham
-bgCurrentJobLabel.TextSize = 9
-bgCurrentJobLabel.TextXAlignment = Enum.TextXAlignment.Left
-bgCurrentJobLabel.TextTruncate = Enum.TextTruncate.AtEnd
-bgCurrentJobLabel.Active = false
-bgCurrentJobLabel.Parent = bgStatusFrame
-
--- Functions
-local function updateStatus(text)
-    statusLabel.Text = "Status: " .. text
-    print("[Nexa] " .. text)
-end
-
-local function updateBackgroundStatus(text, color)
-    bgStatusLabel.Text = text
-    bgStatusLabel.TextColor3 = color or Color3.fromRGB(100, 255, 100)
-end
-
-local function updateBackgroundJob(name, money)
-    bgCurrentJobLabel.Text = name .. " - " .. money
-end
-
-local function parseMoneyPerSec(moneyText)
-    if not moneyText then return 0 end
-    local amount, multiplier = moneyText:match("%$?([%d%.]+)([MKmkBb]?)")
-    if not amount then return 0 end
-    
-    local value = tonumber(amount) or 0
-    multiplier = (multiplier or ""):upper()
-    
-    if multiplier == "M" then
-        value = value * 1000000
-    elseif multiplier == "K" then
-        value = value * 1000
-    elseif multiplier == "B" then
-        value = value * 1000000000
-    end
-    
-    return value
-end
-
-local function createJobEntry(jobName, money, jobId, players)
-    local entry = Instance.new("Frame")
-    entry.Size = UDim2.new(1, -10, 0, 70)
-    entry.BackgroundColor3 = Color3.fromRGB(45, 55, 45)
-    entry.BorderSizePixel = 0
-    entry.Parent = jobListFrame
-    
-    local entryCorner = Instance.new("UICorner")
-    entryCorner.CornerRadius = UDim.new(0, 6)
-    entryCorner.Parent = entry
-    
-    local nameLabel = Instance.new("TextLabel")
-    nameLabel.Size = UDim2.new(1, -20, 0, 20)
-    nameLabel.Position = UDim2.new(0, 10, 0, 5)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = jobName
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.Font = Enum.Font.GothamBold
-    nameLabel.TextSize = 13
-    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-    nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    nameLabel.Parent = entry
-    
-    local moneyLabel = Instance.new("TextLabel")
-    moneyLabel.Size = UDim2.new(0.5, -10, 0, 18)
-    moneyLabel.Position = UDim2.new(0, 10, 0, 28)
-    moneyLabel.BackgroundTransparency = 1
-    moneyLabel.Text = "💰 " .. money
-    moneyLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    moneyLabel.Font = Enum.Font.GothamBold
-    moneyLabel.TextSize = 12
-    moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-    moneyLabel.Parent = entry
-    
-    local playersLabel = Instance.new("TextLabel")
-    playersLabel.Size = UDim2.new(0.5, -10, 0, 18)
-    playersLabel.Position = UDim2.new(0.5, 0, 0, 28)
-    playersLabel.BackgroundTransparency = 1
-    playersLabel.Text = "👥 " .. players .. "/8"
-    playersLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-    playersLabel.Font = Enum.Font.Gotham
-    playersLabel.TextSize = 11
-    playersLabel.TextXAlignment = Enum.TextXAlignment.Right
-    playersLabel.Parent = entry
-    
-    local jobIdLabel = Instance.new("TextLabel")
-    jobIdLabel.Size = UDim2.new(1, -20, 0, 16)
-    jobIdLabel.Position = UDim2.new(0, 10, 0, 48)
-    jobIdLabel.BackgroundTransparency = 1
-    jobIdLabel.Text = "🆔 " .. jobId:sub(1, 30) .. "..."
-    jobIdLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-    jobIdLabel.Font = Enum.Font.Code
-    jobIdLabel.TextSize = 8
-    jobIdLabel.TextXAlignment = Enum.TextXAlignment.Left
-    jobIdLabel.TextTruncate = Enum.TextTruncate.AtEnd
-    jobIdLabel.Parent = entry
-    
-    return entry
-end
-
-local function teleportToJob(jobId, jobName, jobMoney)
-    if isJoining then
-        updateStatus("Already joining...")
-        return
-    end
-    
-    processedJobs[jobId] = true
-    isJoining = true
-    
-    updateStatus("🔄 Joining: " .. jobName)
-    
-    if currentMode == "background" then
-        updateBackgroundStatus("🔄 Joining...", Color3.fromRGB(255, 200, 100))
-        updateBackgroundJob(jobName, jobMoney)
-    end
-    
-    print("[Nexa] Teleporting to Job ID: " .. jobId)
-    print("[Nexa] Job: " .. jobName .. " - " .. jobMoney)
-    
-    wait(0.5)
-    
-    local success, errorMsg = pcall(function()
-        TeleportService:TeleportToPlaceInstance(GAME_ID, jobId, player)
-    end)
-    
-    if not success then
-        updateStatus("❌ Teleport failed")
-        print("[Nexa] Error:", errorMsg)
-        
-        if currentMode == "background" then
-            updateBackgroundStatus("❌ Failed", Color3.fromRGB(255, 100, 100))
-        end
-        
-        wait(3)
-        isJoining = false
-        
-        if currentMode == "background" then
-            updateBackgroundStatus("🟢 Active", Color3.fromRGB(100, 255, 100))
-            updateBackgroundJob("Waiting...", "")
-        end
-    end
-end
-
-local function clearJobList()
-    for _, child in pairs(jobListFrame:GetChildren()) do
-        if child:IsA("Frame") then
-            child:Destroy()
-        end
-    end
-end
-
-local function addJobLog(jobData)
-    for i, log in pairs(jobLogs) do
-        if log.jobId == jobData.jobId then
-            jobLogs[i] = jobData
-            clearJobList()
-            for _, log in pairs(jobLogs) do
-                createJobEntry(log.name, log.money, log.jobId, log.players)
-            end
-            jobListFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-            return
-        end
-    end
-    
-    table.insert(jobLogs, 1, jobData)
-    createJobEntry(jobData.name, jobData.money, jobData.jobId, jobData.players)
-    jobListFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-end
-
-local function readJobsFromFile()
-    if not canReadFiles then
-        infoLabel.Text = "❌ Executor Not Supported!"
-        infoLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        updateStatus("❌ Your executor doesn't support file operations!")
-        return
-    end
-    
-    if not JOBS_FILE then
-        infoLabel.Text = "❌ Jobs file not found!"
-        infoLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        updateStatus("❌ Cannot find nexa_jobs.json - check console (F9)")
-        return
-    end
-    
-    spawn(function()
-        local firstRead = true
-        
-        while wait(CHECK_INTERVAL) do
-            local success, result = pcall(function()
-                local fileContent = readfile(JOBS_FILE)
-                local jobs = game:GetService("HttpService"):JSONDecode(fileContent)
+class JobHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path in ['/jobs', '/nexa_jobs.json']:
+            try:
+                if os.path.exists(JOBS_FILE):
+                    with open(JOBS_FILE, 'r') as f:
+                        data = f.read()
+                else:
+                    data = '[]'
                 
-                if firstRead then
-                    firstRead = false
-                    print("[Nexa] ✅ Successfully reading jobs file!")
-                end
-                
-                if jobs and #jobs > 0 then
-                    infoLabel.Text = "📁 File: Active (" .. #jobs .. " jobs)"
-                    infoLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-                    
-                    if currentMode == "background" then
-                        updateBackgroundStatus("📡 " .. #jobs .. " jobs", Color3.fromRGB(100, 255, 100))
-                    end
-                    
-                    local bestJob = nil
-                    local bestMoney = 0
-                    
-                    for _, job in ipairs(jobs) do
-                        if job.name and job.jobId and job.money then
-                            local money = parseMoneyPerSec(job.money)
-                            
-                            addJobLog({
-                                name = job.name,
-                                money = job.money,
-                                jobId = job.jobId,
-                                players = job.players or "0"
-                            })
-                            
-                            if money > bestMoney and not processedJobs[job.jobId] then
-                                bestMoney = money
-                                bestJob = job
-                            end
-                        end
-                    end
-                    
-                    -- Auto-join
-                    if (currentMode == "auto" or currentMode == "background") and bestJob and not isJoining then
-                        print("[Nexa] Best job found: " .. bestJob.name)
-                        spawn(function()
-                            wait(0.5)
-                            teleportToJob(bestJob.jobId, bestJob.name, bestJob.money)
-                        end)
-                    end
-                else
-                    infoLabel.Text = "📁 File: Active (0 jobs)"
-                    infoLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-                    
-                    if currentMode == "background" then
-                        updateBackgroundStatus("⏸️ No jobs", Color3.fromRGB(255, 200, 100))
-                    end
-                end
-            end)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+                self.end_headers()
+                self.wfile.write(data.encode())
+            except Exception as e:
+                self.send_error(500)
+        else:
+            self.send_error(404)
+    
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.end_headers()
+    
+    def log_message(self, format, *args):
+        pass
+
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("NEXA MONITOR")
+        self.root.geometry("800x650")
+        self.root.configure(bg="#0f1419")
+        self.root.resizable(False, False)
+        
+        self.min_money = 25.0
+        self.blacklist = []  # User can add their own
+        self.job_logs = []
+        self.is_running = False
+        self.last_message_id = None
+        self.seen_jobs = set()
+        
+        self.http_server = None
+        self.server_port = 8080
+        self.server_running = False
+        
+        self.create_ui()
+        
+        # Start server immediately
+        threading.Thread(target=self.start_http_server, daemon=True).start()
+    
+    def create_ui(self):
+        # Header
+        header = tk.Frame(self.root, bg="#00d9ff", height=80)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        
+        tk.Label(header, text="NEXA", 
+                font=("Arial", 32, "bold"), 
+                bg="#00d9ff", fg="#0f1419").pack(side=tk.LEFT, padx=30, pady=20)
+        
+        tk.Label(header, text="JOB MONITOR", 
+                font=("Arial", 16), 
+                bg="#00d9ff", fg="#0f1419").pack(side=tk.LEFT, pady=20)
+        
+        self.status_indicator = tk.Label(header, text="●", 
+                                         font=("Arial", 24), 
+                                         bg="#00d9ff", fg="#ff4444")
+        self.status_indicator.pack(side=tk.RIGHT, padx=30)
+        
+        # Server Info Card
+        server_card = tk.Frame(self.root, bg="#1a1f26")
+        server_card.pack(fill=tk.X, padx=30, pady=20)
+        
+        tk.Label(server_card, text="🌐 SERVER STATUS", 
+                font=("Arial", 12, "bold"), 
+                bg="#1a1f26", fg="#00d9ff").pack(anchor=tk.W, padx=20, pady=(15, 5))
+        
+        self.server_label = tk.Label(server_card, text="Starting...", 
+                                     font=("Arial", 10), 
+                                     bg="#1a1f26", fg="#ffffff")
+        self.server_label.pack(anchor=tk.W, padx=20, pady=(0, 5))
+        
+        self.url_label = tk.Label(server_card, text="URL: Initializing...", 
+                                  font=("Courier", 9), 
+                                  bg="#1a1f26", fg="#00d9ff")
+        self.url_label.pack(anchor=tk.W, padx=20, pady=(0, 15))
+        
+        # Control Panel
+        control_frame = tk.Frame(self.root, bg="#0f1419")
+        control_frame.pack(fill=tk.X, padx=30, pady=10)
+        
+        # Min Money Control
+        money_frame = tk.Frame(control_frame, bg="#1a1f26")
+        money_frame.pack(side=tk.LEFT, padx=(0, 15))
+        
+        tk.Label(money_frame, text="Min Money (M):", 
+                font=("Arial", 10, "bold"), 
+                bg="#1a1f26", fg="#ffffff").pack(side=tk.LEFT, padx=10, pady=10)
+        
+        self.min_entry = tk.Entry(money_frame, width=8, 
+                                  font=("Arial", 10), 
+                                  bg="#0f1419", fg="#ffffff",
+                                  insertbackground="#ffffff")
+        self.min_entry.insert(0, "25")
+        self.min_entry.pack(side=tk.LEFT, padx=(0, 10), pady=10)
+        
+        # Buttons
+        self.start_btn = tk.Button(control_frame, text="▶ START", 
+                                   command=self.start_monitoring,
+                                   bg="#00d9ff", fg="#0f1419",
+                                   font=("Arial", 11, "bold"),
+                                   width=12, height=2,
+                                   relief=tk.FLAT, cursor="hand2",
+                                   activebackground="#00b8d4")
+        self.start_btn.pack(side=tk.LEFT, padx=5)
+        
+        self.stop_btn = tk.Button(control_frame, text="⏹ STOP", 
+                                  command=self.stop_monitoring,
+                                  bg="#ff4444", fg="#ffffff",
+                                  font=("Arial", 11, "bold"),
+                                  width=12, height=2,
+                                  relief=tk.FLAT, cursor="hand2",
+                                  state=tk.DISABLED,
+                                  activebackground="#cc0000")
+        self.stop_btn.pack(side=tk.LEFT, padx=5)
+        
+        clear_btn = tk.Button(control_frame, text="🗑 CLEAR", 
+                             command=self.clear_logs,
+                             bg="#ff9800", fg="#ffffff",
+                             font=("Arial", 11, "bold"),
+                             width=12, height=2,
+                             relief=tk.FLAT, cursor="hand2",
+                             activebackground="#f57c00")
+        clear_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Logs Section
+        logs_frame = tk.Frame(self.root, bg="#1a1f26")
+        logs_frame.pack(fill=tk.BOTH, expand=True, padx=30, pady=(10, 20))
+        
+        tk.Label(logs_frame, text="📋 ACTIVITY LOG", 
+                font=("Arial", 12, "bold"), 
+                bg="#1a1f26", fg="#00d9ff").pack(anchor=tk.W, padx=20, pady=(15, 10))
+        
+        self.logs = scrolledtext.ScrolledText(logs_frame, 
+                                              bg="#0f1419", fg="#00ff88",
+                                              font=("Courier", 9),
+                                              height=12,
+                                              relief=tk.FLAT,
+                                              padx=15, pady=15)
+        self.logs.pack(fill=tk.BOTH, expand=True, padx=20, pady=(0, 15))
+        
+        self.logs.tag_config("green", foreground="#00ff88")
+        self.logs.tag_config("red", foreground="#ff6b6b")
+        self.logs.tag_config("yellow", foreground="#ffd93d")
+        self.logs.tag_config("cyan", foreground="#00d9ff")
+        
+        # Footer Stats
+        self.stats = tk.Label(self.root, text="Jobs: 0 | Status: Idle", 
+                             bg="#1a1f26", fg="#ffffff", 
+                             font=("Arial", 10), pady=12)
+        self.stats.pack(fill=tk.X, side=tk.BOTTOM)
+        
+        # Initial log
+        self.log("✨ NEXA Monitor initialized", "cyan")
+        self.log("🔐 Using configured Discord credentials", "green")
+    
+    def start_http_server(self):
+        try:
+            self.http_server = HTTPServer(('0.0.0.0', self.server_port), JobHandler)
+            self.server_running = True
             
-            if not success then
-                infoLabel.Text = "❌ Cannot read file!"
-                infoLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-                
-                if firstRead then
-                    print("[Nexa] Cannot read file: " .. JOBS_FILE)
-                    print("[Nexa] Error: " .. tostring(result))
-                    print("[Nexa] Make sure Python app is saving to the correct location!")
-                end
-                
-                if currentMode == "background" then
-                    updateBackgroundStatus("🔴 No File", Color3.fromRGB(255, 100, 100))
-                end
-            end
-        end
-    end)
-end
-
--- Button Handlers
-autoButton.MouseButton1Click:Connect(function()
-    if currentMode == "auto" then
-        currentMode = "manual"
-        autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-        autoButton.Text = "🎯 AUTO JOIN (OFF)"
-        bgStatusFrame.Visible = false
-        mainFrame.Visible = true
-        updateStatus("⏹️ Auto OFF")
-        return
-    end
+            # Get actual network IP (not localhost)
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            actual_ip = s.getsockname()[0]
+            s.close()
+            
+            url = f"http://{actual_ip}:{self.server_port}/jobs"
+            
+            self.root.after(0, lambda: self.server_label.config(
+                text="✅ Online", fg="#00ff88"))
+            self.root.after(0, lambda: self.url_label.config(
+                text=f"URL: {url}"))
+            self.root.after(0, lambda: self.status_indicator.config(fg="#00ff88"))
+            self.root.after(0, lambda: self.log("✅ HTTP Server started successfully", "green"))
+            self.root.after(0, lambda: self.log(f"📡 Server URL: {url}", "cyan"))
+            self.root.after(0, lambda: self.log(f"⚠️  Use this URL in Roblox script, NOT localhost!", "yellow"))
+            
+            if not os.path.exists(JOBS_FILE):
+                with open(JOBS_FILE, 'w') as f:
+                    f.write('[]')
+            
+            self.http_server.serve_forever()
+        except Exception as e:
+            self.server_running = False
+            self.root.after(0, lambda: self.server_label.config(
+                text=f"❌ Failed: {e}", fg="#ff6b6b"))
+            self.root.after(0, lambda: self.log(f"❌ Server error: {e}", "red"))
     
-    currentMode = "auto"
-    autoButton.BackgroundColor3 = Color3.fromRGB(60, 100, 60)
-    autoButton.Text = "🎯 AUTO JOIN (ON)"
-    backgroundButton.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
-    bgStatusFrame.Visible = false
-    mainFrame.Visible = true
-    updateStatus("🟢 Auto ON - Will join best job!")
-end)
-
-backgroundButton.MouseButton1Click:Connect(function()
-    if currentMode == "background" then
-        currentMode = "manual"
-        backgroundButton.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
-        bgStatusFrame.Visible = false
-        mainFrame.Visible = true
-        updateStatus("⏹️ Background OFF")
-        return
-    end
+    def log(self, msg, color="green"):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        self.logs.insert(tk.END, f"[{timestamp}] {msg}\n", color)
+        self.logs.see(tk.END)
     
-    currentMode = "background"
-    backgroundButton.BackgroundColor3 = Color3.fromRGB(120, 60, 200)
-    autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-    autoButton.Text = "🎯 AUTO JOIN (OFF)"
-    bgStatusFrame.Visible = true
-    mainFrame.Visible = false
-    updateBackgroundStatus("🟢 Active", Color3.fromRGB(100, 255, 100))
-    updateBackgroundJob("Waiting...", "")
-    updateStatus("👻 Background Mode Active")
-end)
+    def parse_money(self, s):
+        m = re.search(r'\$?([0-9.]+)([KMB]?)', s)
+        if not m: return 0
+        v = float(m.group(1))
+        mult = m.group(2).upper()
+        if mult == 'M': return v * 1000000
+        if mult == 'K': return v * 1000
+        if mult == 'B': return v * 1000000000
+        return v
+    
+    def parse_embed(self, e):
+        d = {"name": None, "money": None, "players": None, "jobId": None}
+        if not e or "fields" not in e: return None
+        for f in e.get("fields", []):
+            n = f.get("name", "").lower()
+            v = f.get("value", "")
+            if "name" in n: d["name"] = v.strip()
+            elif "money" in n: d["money"] = v.strip()
+            elif "players" in n:
+                m = re.search(r'(\d+)/\d+', v)
+                if m: d["players"] = m.group(1)
+            elif "job id" in n and "mobile" in n: d["jobId"] = v.strip()
+        return d if d["name"] and d["money"] and d["jobId"] else None
+    
+    def fetch_messages(self):
+        try:
+            r = requests.get(
+                f"https://discord.com/api/v9/channels/{CHANNEL_ID}/messages?limit=5",
+                headers={"Authorization": DISCORD_TOKEN}, 
+                timeout=10
+            )
+            if r.status_code == 200: 
+                return r.json()
+            elif r.status_code == 401: 
+                self.log("❌ Invalid Discord token!", "red")
+            elif r.status_code == 403: 
+                self.log("❌ No access to channel!", "red")
+        except Exception as e:
+            self.log(f"❌ Connection error: {e}", "red")
+        return None
+    
+    def monitor_loop(self):
+        self.log("🚀 Monitoring started", "green")
+        
+        while self.is_running:
+            try:
+                try:
+                    self.min_money = float(self.min_entry.get().strip())
+                except:
+                    self.min_money = 25.0
+                
+                msgs = self.fetch_messages()
+                if msgs:
+                    for m in reversed(msgs):
+                        if not self.is_running: break
+                        mid = m.get("id")
+                        if self.last_message_id and int(mid) <= int(self.last_message_id): 
+                            continue
+                        self.last_message_id = mid
+                        
+                        for e in m.get("embeds", []):
+                            j = self.parse_embed(e)
+                            if j and j["jobId"] not in self.seen_jobs:
+                                # Check min money
+                                if self.parse_money(j["money"]) < self.min_money * 1000000:
+                                    continue
+                                
+                                self.seen_jobs.add(j["jobId"])
+                                self.job_logs.insert(0, j)
+                                
+                                self.log(f"🔥 NEW: {j['name']}", "red")
+                                self.log(f"   💰 {j['money']} | 👥 {j['players']}/8", "green")
+                                
+                                # Save to main file
+                                with open(JOBS_FILE, "w") as f:
+                                    json.dump(self.job_logs[:50], f)
+                                
+                                self.update_stats()
+                
+                time.sleep(2)
+            except Exception as e:
+                self.log(f"⚠️ Error: {e}", "red")
+                time.sleep(5)
+        
+        self.log("⏹️ Monitoring stopped", "yellow")
+    
+    def update_stats(self):
+        status = "Running" if self.is_running else "Idle"
+        self.stats.config(text=f"Jobs: {len(self.job_logs)} | Status: {status}")
+    
+    def start_monitoring(self):
+        self.is_running = True
+        self.start_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.NORMAL)
+        self.status_indicator.config(fg="#00ff88")
+        threading.Thread(target=self.monitor_loop, daemon=True).start()
+    
+    def stop_monitoring(self):
+        self.is_running = False
+        self.start_btn.config(state=tk.NORMAL)
+        self.stop_btn.config(state=tk.DISABLED)
+        self.status_indicator.config(fg="#ff4444")
+        self.update_stats()
+    
+    def clear_logs(self):
+        self.job_logs.clear()
+        self.seen_jobs.clear()
+        self.logs.delete(1.0, tk.END)
+        self.update_stats()
+        self.log("✅ Logs cleared", "green")
 
-stopButton.MouseButton1Click:Connect(function()
-    currentMode = "manual"
-    autoButton.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
-    autoButton.Text = "🎯 AUTO JOIN (OFF)"
-    backgroundButton.BackgroundColor3 = Color3.fromRGB(80, 40, 180)
-    bgStatusFrame.Visible = false
-    mainFrame.Visible = true
-    updateStatus("⏹️ Stopped")
-end)
-
--- Keep background in position
-RunService.Heartbeat:Connect(function()
-    if bgStatusFrame.Visible and bgStatusFrame.Position ~= UDim2.new(1, -230, 1, -70) then
-        bgStatusFrame.Position = UDim2.new(1, -230, 1, -70)
-    end
-end)
-
--- Start
-readJobsFromFile()
-
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-if JOBS_FILE then
-    print("✅ Nexa Joiner Ready!")
-    print("📁 Reading from: " .. JOBS_FILE)
-    print("✅ File operations supported")
-else
-    print("❌ Nexa Joiner - FILE NOT FOUND!")
-    print("Check console above for tried paths")
-end
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = App(root)
+    root.mainloop()
