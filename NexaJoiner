@@ -378,6 +378,9 @@ local function updateJobsList(jobs)
 	task.wait(0.1)
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
 end
+-- Forward declaration
+local attemptJoin
+
 
 local function fetchJobs()
 	local success, result = pcall(function()
@@ -437,7 +440,7 @@ end
 
 local joining = false
 
-local function attemptJoin()
+attemptJoin = function()
 	if joining then return end
 	
 	local jobId = jobIdInput.Text
@@ -527,4 +530,5 @@ fetchJobs()
 
 print("✅ NEXA Job Monitor loaded successfully!")
 print("🌐 Connecting to desktop server at:", SERVER_URL)
+
 
