@@ -16,7 +16,7 @@ local PLACE_ID = game.PlaceId
 -- Settings
 local Settings = {
 	ToggleKeybind = Enum.KeyCode.RightControl,
-	AutoJoinNew = true,
+	AutoJoinNew = false,  -- Start with auto-join OFF
 	SpammerEnabled = false,
 	SpammerDelay = 0.1  -- Very fast spamming (0.1 seconds)
 }
@@ -121,7 +121,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
 
--- Settings Button
+-- Settings Button (moved to left to avoid overlap)
 local settingsButton = Instance.new("TextButton")
 settingsButton.Size = UDim2.new(0, 35, 0, 35)
 settingsButton.Position = UDim2.new(1, -90, 0, 17.5)
@@ -185,37 +185,81 @@ inputPadding.PaddingLeft = UDim.new(0, 8)
 inputPadding.PaddingRight = UDim.new(0, 8)
 inputPadding.Parent = jobIdInput
 
+-- Toggle Buttons Frame (Auto-Join and Spammer side by side)
+local togglesFrame = Instance.new("Frame")
+togglesFrame.Size = UDim2.new(1, -30, 0, 45)
+togglesFrame.Position = UDim2.new(0, 15, 0, 185)
+togglesFrame.BackgroundTransparency = 1
+togglesFrame.Parent = mainFrame
+
+-- Auto-Join Toggle
+local autoJoinFrame = Instance.new("Frame")
+autoJoinFrame.Size = UDim2.new(0.48, 0, 1, 0)
+autoJoinFrame.Position = UDim2.new(0, 0, 0, 0)
+autoJoinFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+autoJoinFrame.BorderSizePixel = 0
+autoJoinFrame.Parent = togglesFrame
+
+local autoJoinCorner = Instance.new("UICorner")
+autoJoinCorner.CornerRadius = UDim.new(0, 10)
+autoJoinCorner.Parent = autoJoinFrame
+
+local autoJoinLabel = Instance.new("TextLabel")
+autoJoinLabel.Size = UDim2.new(0.6, 0, 1, 0)
+autoJoinLabel.Position = UDim2.new(0, 8, 0, 0)
+autoJoinLabel.BackgroundTransparency = 1
+autoJoinLabel.Font = Enum.Font.GothamBold
+autoJoinLabel.Text = "⚡ AUTO-JOIN"
+autoJoinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoJoinLabel.TextSize = 11
+autoJoinLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoJoinLabel.Parent = autoJoinFrame
+
+local autoJoinToggle = Instance.new("TextButton")
+autoJoinToggle.Size = UDim2.new(0, 55, 0, 28)
+autoJoinToggle.Position = UDim2.new(1, -60, 0.5, -14)
+autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+autoJoinToggle.Font = Enum.Font.GothamBold
+autoJoinToggle.Text = "OFF"
+autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoJoinToggle.TextSize = 11
+autoJoinToggle.Parent = autoJoinFrame
+
+local autoJoinToggleCorner = Instance.new("UICorner")
+autoJoinToggleCorner.CornerRadius = UDim.new(0, 8)
+autoJoinToggleCorner.Parent = autoJoinToggle
+
 -- Spammer Toggle
 local spammerFrame = Instance.new("Frame")
-spammerFrame.Size = UDim2.new(1, -30, 0, 45)
-spammerFrame.Position = UDim2.new(0, 15, 0, 185)
+spammerFrame.Size = UDim2.new(0.48, 0, 1, 0)
+spammerFrame.Position = UDim2.new(0.52, 0, 0, 0)
 spammerFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 spammerFrame.BorderSizePixel = 0
-spammerFrame.Parent = mainFrame
+spammerFrame.Parent = togglesFrame
 
 local spammerCorner = Instance.new("UICorner")
 spammerCorner.CornerRadius = UDim.new(0, 10)
 spammerCorner.Parent = spammerFrame
 
 local spammerLabel = Instance.new("TextLabel")
-spammerLabel.Size = UDim2.new(0.7, 0, 1, 0)
-spammerLabel.Position = UDim2.new(0, 12, 0, 0)
+spammerLabel.Size = UDim2.new(0.6, 0, 1, 0)
+spammerLabel.Position = UDim2.new(0, 8, 0, 0)
 spammerLabel.BackgroundTransparency = 1
 spammerLabel.Font = Enum.Font.GothamBold
-spammerLabel.Text = "🔄 AUTO-JOIN SPAMMER"
+spammerLabel.Text = "🔄 SPAMMER"
 spammerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-spammerLabel.TextSize = 13
+spammerLabel.TextSize = 11
 spammerLabel.TextXAlignment = Enum.TextXAlignment.Left
 spammerLabel.Parent = spammerFrame
 
 local spammerToggle = Instance.new("TextButton")
-spammerToggle.Size = UDim2.new(0, 70, 0, 30)
-spammerToggle.Position = UDim2.new(1, -80, 0.5, -15)
+spammerToggle.Size = UDim2.new(0, 55, 0, 28)
+spammerToggle.Position = UDim2.new(1, -60, 0.5, -14)
 spammerToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 spammerToggle.Font = Enum.Font.GothamBold
 spammerToggle.Text = "OFF"
 spammerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-spammerToggle.TextSize = 12
+spammerToggle.TextSize = 11
 spammerToggle.Parent = spammerFrame
 
 local spammerToggleCorner = Instance.new("UICorner")
@@ -359,47 +403,12 @@ local keybindButtonCorner = Instance.new("UICorner")
 keybindButtonCorner.CornerRadius = UDim.new(0, 6)
 keybindButtonCorner.Parent = keybindButton
 
--- Auto-Join New Jobs Toggle
-local autoJoinFrame = Instance.new("Frame")
-autoJoinFrame.Size = UDim2.new(1, -30, 0, 50)
-autoJoinFrame.Position = UDim2.new(0, 15, 0, 145)
-autoJoinFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-autoJoinFrame.BorderSizePixel = 0
-autoJoinFrame.Parent = settingsPanel
-
-local autoJoinCorner = Instance.new("UICorner")
-autoJoinCorner.CornerRadius = UDim.new(0, 8)
-autoJoinCorner.Parent = autoJoinFrame
-
-local autoJoinLabel = Instance.new("TextLabel")
-autoJoinLabel.Size = UDim2.new(0.7, 0, 1, 0)
-autoJoinLabel.Position = UDim2.new(0, 10, 0, 0)
-autoJoinLabel.BackgroundTransparency = 1
-autoJoinLabel.Font = Enum.Font.GothamBold
-autoJoinLabel.Text = "⚡ Auto-Join New Jobs"
-autoJoinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoJoinLabel.TextSize = 13
-autoJoinLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoJoinLabel.Parent = autoJoinFrame
-
-local autoJoinToggle = Instance.new("TextButton")
-autoJoinToggle.Size = UDim2.new(0, 70, 0, 30)
-autoJoinToggle.Position = UDim2.new(1, -80, 0.5, -15)
-autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-autoJoinToggle.Font = Enum.Font.GothamBold
-autoJoinToggle.Text = "ON"
-autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-autoJoinToggle.TextSize = 12
-autoJoinToggle.Parent = autoJoinFrame
-
-local autoJoinToggleCorner = Instance.new("UICorner")
-autoJoinToggleCorner.CornerRadius = UDim.new(0, 8)
-autoJoinToggleCorner.Parent = autoJoinToggle
+-- Auto-Join New Jobs Toggle (removed - now in main UI)
 
 -- Spammer Delay Setting
 local delayFrame = Instance.new("Frame")
 delayFrame.Size = UDim2.new(1, -30, 0, 70)
-delayFrame.Position = UDim2.new(0, 15, 0, 205)
+delayFrame.Position = UDim2.new(0, 15, 0, 145)
 delayFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 delayFrame.BorderSizePixel = 0
 delayFrame.Parent = settingsPanel
@@ -725,6 +734,23 @@ settingsCloseButton.MouseButton1Click:Connect(function()
 	settingsPanel.Visible = false
 end)
 
+-- Main UI Auto-Join Toggle
+autoJoinToggle.MouseButton1Click:Connect(function()
+	Settings.AutoJoinNew = not Settings.AutoJoinNew
+	
+	if Settings.AutoJoinNew then
+		autoJoinToggle.Text = "ON"
+		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+		showNotification("⚡ Auto-Join ENABLED", Color3.fromRGB(0, 255, 136))
+	else
+		autoJoinToggle.Text = "OFF"
+		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		showNotification("⏹ Auto-Join DISABLED", Color3.fromRGB(255, 68, 68))
+	end
+end)
+
 spammerToggle.MouseButton1Click:Connect(function()
 	Settings.SpammerEnabled = not Settings.SpammerEnabled
 	
@@ -743,21 +769,6 @@ spammerToggle.MouseButton1Click:Connect(function()
 	end
 end)
 
-autoJoinToggle.MouseButton1Click:Connect(function()
-	Settings.AutoJoinNew = not Settings.AutoJoinNew
-	
-	if Settings.AutoJoinNew then
-		autoJoinToggle.Text = "ON"
-		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-		autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-		showNotification("⚡ Auto-Join ON", Color3.fromRGB(0, 255, 136))
-	else
-		autoJoinToggle.Text = "OFF"
-		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		showNotification("⏹ Auto-Join OFF", Color3.fromRGB(255, 68, 68))
-	end
-end)
 
 keybindButton.MouseButton1Click:Connect(function()
 	keybindButton.Text = "Press any key..."
