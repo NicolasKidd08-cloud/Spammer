@@ -1,155 +1,67 @@
--- NEXA Brainrot Tracker (SAFE / NON-EXPLOIT)
+-- UI Script for Dupe Feature in "Steal a Brain Rot"
 
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
+-- Create the main UI screen
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local enabled = false
-local tracked = {}
-local HIGHLIGHT_COLOR = Color3.fromRGB(0, 255, 136)
+-- Create the main frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+mainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.new(0.5, 0.5, 0.5)
+mainFrame.Parent = screenGui
 
--------------------------------------------------
--- GUI
--------------------------------------------------
+-- Create the "Dupe" button
+local dupeButton = Instance.new("TextButton")
+dupeButton.Size = UDim2.new(0, 180, 0, 50)
+dupeButton.Position = UDim2.new(0.5, -90, 0.5, -25)
+dupeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+dupeButton.BorderSizePixel = 2
+dupeButton.BorderColor3 = Color3.new(0.5, 0.5, 0.5)
+dupeButton.Text = "Dupe: Off"
+dupeButton.TextColor3 = Color3.new(1, 1, 1)
+dupeButton.TextSize = 24
+dupeButton.Parent = mainFrame
 
-local function createGui()
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "NexaBrainrotTracker"
-    gui.ResetOnSpawn = false
-    gui.Parent = player:WaitForChild("PlayerGui")
+-- Variable to track the dupe state
+local isDupeOn = false
 
-    local frame = Instance.new("Frame")
-    frame.Parent = gui
-    frame.Size = UDim2.fromOffset(250, 190)
-    frame.Position = UDim2.fromScale(0.5, 0.3)
-    frame.AnchorPoint = Vector2.new(0.5, 0)
-    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
-    frame.BorderSizePixel = 0
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
-
-    local title = Instance.new("TextLabel")
-    title.Parent = frame
-    title.Size = UDim2.new(1, -20, 0, 35)
-    title.Position = UDim2.fromOffset(10, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "🧠 NEXA Brainrot Tracker"
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 15
-    title.TextColor3 = HIGHLIGHT_COLOR
-    title.TextXAlignment = Enum.TextXAlignment.Left
-
-    local status = Instance.new("TextLabel")
-    status.Parent = frame
-    status.Name = "Status"
-    status.Size = UDim2.new(1, -20, 0, 25)
-    status.Position = UDim2.fromOffset(10, 40)
-    status.BackgroundTransparency = 1
-    status.Text = "Status: Disabled"
-    status.Font = Enum.Font.Gotham
-    status.TextSize = 12
-    status.TextColor3 = Color3.fromRGB(200, 200, 200)
-    status.TextXAlignment = Enum.TextXAlignment.Left
-
-    local counter = Instance.new("TextLabel")
-    counter.Parent = frame
-    counter.Name = "Counter"
-    counter.Size = UDim2.new(1, -20, 0, 20)
-    counter.Position = UDim2.fromOffset(10, 65)
-    counter.BackgroundTransparency = 1
-    counter.Text = "Tracked: 0"
-    counter.Font = Enum.Font.Gotham
-    counter.TextSize = 11
-    counter.TextColor3 = Color3.fromRGB(150, 150, 150)
-    counter.TextXAlignment = Enum.TextXAlignment.Left
-
-    local toggle = Instance.new("TextButton")
-    toggle.Parent = frame
-    toggle.Size = UDim2.fromOffset(220, 40)
-    toggle.Position = UDim2.fromOffset(15, 100)
-    toggle.Text = "Enable Tracker"
-    toggle.Font = Enum.Font.GothamBold
-    toggle.TextSize = 14
-    toggle.TextColor3 = Color3.new(1, 1, 1)
-    toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
-
-    return gui, toggle, status, counter
-end
-
--------------------------------------------------
--- Detection (SAFE)
--------------------------------------------------
-
-local function isBrainrot(obj)
-    return obj:IsA("BasePart") and obj.Name:lower():find("brain")
-end
-
-local function addHighlight(part)
-    if tracked[part] then return end
-
-    local h = Instance.new("Highlight")
-    h.FillColor = HIGHLIGHT_COLOR
-    h.OutlineColor = HIGHLIGHT_COLOR
-    h.FillTransparency = 0.5
-    h.Parent = part
-
-    tracked[part] = h
-end
-
-local function clearAll()
-    for _, h in pairs(tracked) do
-        if h then h:Destroy() end
-    end
-    tracked = {}
-end
-
--------------------------------------------------
--- Loop
--------------------------------------------------
-
-RunService.Heartbeat:Connect(function()
-    if not enabled then return end
-
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if isBrainrot(obj) then
-            if (obj.Position - hrp.Position).Magnitude <= 12 then
-                addHighlight(obj)
-            end
-        end
-    end
-end)
-
--------------------------------------------------
--- Boot
--------------------------------------------------
-
-local gui, button, status, counter = createGui()
-
-button.MouseButton1Click:Connect(function()
-    enabled = not enabled
-
-    if enabled then
-        button.Text = "Disable Tracker"
-        button.BackgroundColor3 = HIGHLIGHT_COLOR
-        button.TextColor3 = Color3.fromRGB(20, 20, 20)
-        status.Text = "Status: ACTIVE 🟢"
+-- Function to toggle the dupe state
+local function toggleDupe()
+    isDupeOn = not isDupeOn
+    if isDupeOn then
+        dupeButton.Text = "Dupe: On"
     else
-        button.Text = "Enable Tracker"
-        button.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-        button.TextColor3 = Color3.new(1, 1, 1)
-        status.Text = "Status: Disabled 🔴"
-        clearAll()
+        dupeButton.Text = "Dupe: Off"
+    end
+end
+
+-- Connect the button click to the toggle function
+dupeButton.MouseButton1Click:Connect(toggleDupe)
+
+-- Function to handle the dupe logic
+local function handleDupe()
+    if isDupeOn then
+        -- Logic to duplicate the Brain Rot
+        local brainRot = -- Your logic to get the Brain Rot object
+        local duplicate = brainRot:Clone()
+        duplicate.Parent = workspace -- Or wherever you want to place the duplicate
+        print("Brain Rot duplicated!")
+    else
+        print("Dupe is off. Brain Rot will be placed normally.")
+    end
+end
+
+-- Connect the handleDupe function to the appropriate event
+-- For example, if you have a specific event for placing the Brain Rot
+-- game.Players.LocalPlayer.CharacterAdded:Connect(handleDupe)
+
+-- Example event connection (replace with actual event in your game)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.E then
+        handleDupe()
     end
 end)
-
-RunService.RenderStepped:Connect(function()
-    counter.Text = "Tracked: " .. tostring(#tracked)
-end)
-
-print("✓ NEXA Brainrot Tracker loaded")
-
 
