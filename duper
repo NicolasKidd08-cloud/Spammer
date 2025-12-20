@@ -1,67 +1,312 @@
--- UI Script for Dupe Feature in "Steal a Brain Rot"
+-- NEXA Brainrot Duper
+-- Client-side duplication for Steal a Brainrot
 
--- Create the main UI screen
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local player = game.Players.LocalPlayer
+local isDupeEnabled = false
+local lastBrainrot = nil
+local savedBrainrots = {}
 
--- Create the main frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 100)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
-mainFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.new(0.5, 0.5, 0.5)
-mainFrame.Parent = screenGui
+-- Create GUI
+local function createGui()
+    local playerGui = player:WaitForChild("PlayerGui")
+    
+    -- Remove old GUI if exists
+    if playerGui:FindFirstChild("NexaBrainrotDuper") then
+        playerGui:FindFirstChild("NexaBrainrotDuper"):Destroy()
+    end
+    
+    -- Create ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "NexaBrainrotDuper"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = playerGui
+    
+    -- Main Frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Name = "MainFrame"
+    mainFrame.Size = UDim2.new(0, 250, 0, 200)
+    mainFrame.Position = UDim2.new(0.5, -125, 0.3, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = screenGui
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 12)
+    corner.Parent = mainFrame
+    
+    -- Shadow effect
+    local shadow = Instance.new("Frame")
+    shadow.Size = UDim2.new(1, 6, 1, 6)
+    shadow.Position = UDim2.new(0, -3, 0, -3)
+    shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.BackgroundTransparency = 0.7
+    shadow.ZIndex = 0
+    shadow.Parent = mainFrame
+    
+    local shadowCorner = Instance.new("UICorner")
+    shadowCorner.CornerRadius = UDim.new(0, 12)
+    shadowCorner.Parent = shadow
+    
+    -- Title Bar
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 40)
+    titleBar.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = mainFrame
+    
+    local titleCorner = Instance.new("UICorner")
+    titleCorner.CornerRadius = UDim.new(0, 12)
+    titleCorner.Parent = titleBar
+    
+    -- Title fix (remove bottom corners)
+    local titleFix = Instance.new("Frame")
+    titleFix.Size = UDim2.new(1, 0, 0, 12)
+    titleFix.Position = UDim2.new(0, 0, 1, -12)
+    titleFix.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+    titleFix.BorderSizePixel = 0
+    titleFix.Parent = titleBar
+    
+    -- Title Text
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -20, 1, 0)
+    title.Position = UDim2.new(0, 10, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "🧠 NEXA Brainrot Duper"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.TextColor3 = Color3.fromRGB(20, 20, 20)
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = titleBar
+    
+    -- Status Label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "StatusLabel"
+    statusLabel.Size = UDim2.new(1, -30, 0, 25)
+    statusLabel.Position = UDim2.new(0, 15, 0, 55)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Status: Disabled"
+    statusLabel.Font = Enum.Font.GothamBold
+    statusLabel.TextSize = 12
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = mainFrame
+    
+    -- Counter Label
+    local counterLabel = Instance.new("TextLabel")
+    counterLabel.Name = "CounterLabel"
+    counterLabel.Size = UDim2.new(1, -30, 0, 20)
+    counterLabel.Position = UDim2.new(0, 15, 0, 80)
+    counterLabel.BackgroundTransparency = 1
+    counterLabel.Text = "Duplicated: 0"
+    counterLabel.Font = Enum.Font.Gotham
+    counterLabel.TextSize = 11
+    counterLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    counterLabel.TextXAlignment = Enum.TextXAlignment.Left
+    counterLabel.Parent = mainFrame
+    
+    -- Enable Button
+    local enableButton = Instance.new("TextButton")
+    enableButton.Name = "EnableButton"
+    enableButton.Size = UDim2.new(0, 220, 0, 40)
+    enableButton.Position = UDim2.new(0, 15, 0, 110)
+    enableButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    enableButton.Text = "Enable Duper"
+    enableButton.Font = Enum.Font.GothamBold
+    enableButton.TextSize = 14
+    enableButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    enableButton.Parent = mainFrame
+    
+    local enableCorner = Instance.new("UICorner")
+    enableCorner.CornerRadius = UDim.new(0, 8)
+    enableCorner.Parent = enableButton
+    
+    -- Clear Button
+    local clearButton = Instance.new("TextButton")
+    clearButton.Name = "ClearButton"
+    clearButton.Size = UDim2.new(0, 220, 0, 30)
+    clearButton.Position = UDim2.new(0, 15, 0, 158)
+    clearButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+    clearButton.Text = "Clear All Dupes"
+    clearButton.Font = Enum.Font.GothamBold
+    clearButton.TextSize = 12
+    clearButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    clearButton.Parent = mainFrame
+    
+    local clearCorner = Instance.new("UICorner")
+    clearCorner.CornerRadius = UDim.new(0, 6)
+    clearCorner.Parent = clearButton
+    
+    -- Make draggable
+    local dragging = false
+    local dragInput, mousePos, framePos
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = mainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    titleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            mainFrame.Position = UDim2.new(
+                framePos.X.Scale,
+                framePos.X.Offset + delta.X,
+                framePos.Y.Scale,
+                framePos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    return mainFrame
+end
 
--- Create the "Dupe" button
-local dupeButton = Instance.new("TextButton")
-dupeButton.Size = UDim2.new(0, 180, 0, 50)
-dupeButton.Position = UDim2.new(0.5, -90, 0.5, -25)
-dupeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
-dupeButton.BorderSizePixel = 2
-dupeButton.BorderColor3 = Color3.new(0.5, 0.5, 0.5)
-dupeButton.Text = "Dupe: Off"
-dupeButton.TextColor3 = Color3.new(1, 1, 1)
-dupeButton.TextSize = 24
-dupeButton.Parent = mainFrame
+-- Duplicate brainrot function
+local function duplicateBrainrot(originalBrainrot)
+    if not originalBrainrot then return nil end
+    
+    pcall(function()
+        -- Clone the brainrot
+        local clone = originalBrainrot:Clone()
+        
+        -- Make it transparent to player but visible
+        clone.Transparency = 0.3
+        
+        -- Store it
+        table.insert(savedBrainrots, clone)
+        
+        -- Parent to workspace
+        clone.Parent = workspace
+        
+        print("✓ Duplicated brainrot!")
+        
+        return clone
+    end)
+end
 
--- Variable to track the dupe state
-local isDupeOn = false
-
--- Function to toggle the dupe state
-local function toggleDupe()
-    isDupeOn = not isDupeOn
-    if isDupeOn then
-        dupeButton.Text = "Dupe: On"
-    else
-        dupeButton.Text = "Dupe: Off"
+-- Monitor for brainrot pickup
+local function monitorBrainrots()
+    local character = player.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    -- Look for brainrots near player
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("Part") then
+            -- Check if it's a brainrot (adjust this based on actual game)
+            if obj.Name:lower():find("brainrot") or obj.Name:lower():find("brain") then
+                local distance = (obj.Position - humanoidRootPart.Position).Magnitude
+                
+                if distance < 10 and isDupeEnabled then
+                    -- Player is near brainrot, save it
+                    if obj ~= lastBrainrot then
+                        lastBrainrot = obj
+                        
+                        -- Wait a moment then duplicate
+                        wait(0.5)
+                        duplicateBrainrot(obj)
+                        
+                        -- Update counter
+                        local gui = player.PlayerGui:FindFirstChild("NexaBrainrotDuper")
+                        if gui then
+                            local counter = gui.MainFrame:FindFirstChild("CounterLabel")
+                            if counter then
+                                counter.Text = "Duplicated: " .. #savedBrainrots
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
 end
 
--- Connect the button click to the toggle function
-dupeButton.MouseButton1Click:Connect(toggleDupe)
-
--- Function to handle the dupe logic
-local function handleDupe()
-    if isDupeOn then
-        -- Logic to duplicate the Brain Rot
-        local brainRot = -- Your logic to get the Brain Rot object
-        local duplicate = brainRot:Clone()
-        duplicate.Parent = workspace -- Or wherever you want to place the duplicate
-        print("Brain Rot duplicated!")
-    else
-        print("Dupe is off. Brain Rot will be placed normally.")
+-- Clear all duplicated brainrots
+local function clearDupes()
+    for _, brainrot in pairs(savedBrainrots) do
+        pcall(function()
+            if brainrot then
+                brainrot:Destroy()
+            end
+        end)
+    end
+    
+    savedBrainrots = {}
+    print("✓ Cleared all duplicated brainrots")
+    
+    -- Update counter
+    local gui = player.PlayerGui:FindFirstChild("NexaBrainrotDuper")
+    if gui then
+        local counter = gui.MainFrame:FindFirstChild("CounterLabel")
+        if counter then
+            counter.Text = "Duplicated: 0"
+        end
     end
 end
 
--- Connect the handleDupe function to the appropriate event
--- For example, if you have a specific event for placing the Brain Rot
--- game.Players.LocalPlayer.CharacterAdded:Connect(handleDupe)
+-- Main execution
+print("🚀 Loading NEXA Brainrot Duper...")
 
--- Example event connection (replace with actual event in your game)
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if not gameProcessed and input.KeyCode == Enum.KeyCode.E then
-        handleDupe()
+-- Create GUI
+local mainFrame = createGui()
+
+-- Get UI elements
+local enableButton = mainFrame:FindFirstChild("EnableButton")
+local clearButton = mainFrame:FindFirstChild("ClearButton")
+local statusLabel = mainFrame:FindFirstChild("StatusLabel")
+
+-- Connect Enable Button
+enableButton.MouseButton1Click:Connect(function()
+    isDupeEnabled = not isDupeEnabled
+    
+    if isDupeEnabled then
+        enableButton.Text = "Disable Duper"
+        enableButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+        enableButton.TextColor3 = Color3.fromRGB(20, 20, 20)
+        statusLabel.Text = "Status: ACTIVE 🟢"
+        statusLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
+        print("✓ Duper ENABLED")
+        
+        -- Start monitoring
+        spawn(function()
+            while isDupeEnabled do
+                monitorBrainrots()
+                wait(0.5)
+            end
+        end)
+    else
+        enableButton.Text = "Enable Duper"
+        enableButton.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        enableButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        statusLabel.Text = "Status: Disabled 🔴"
+        statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        print("✓ Duper DISABLED")
     end
 end)
+
+-- Connect Clear Button
+clearButton.MouseButton1Click:Connect(function()
+    clearDupes()
+end)
+
+print("✓ NEXA Brainrot Duper loaded!")
+print("✓ Click 'Enable Duper' to start")
+print("⚠ NOTE: This is CLIENT-SIDE only (visual duplication)")
+print("⚠ Other players won't see duplicated brainrots")
 
