@@ -17,11 +17,7 @@ local function toggleNoclip()
     local character = player.Character or player.CharacterAdded:Wait()
     local humanoid = character:WaitForChild("Humanoid")
 
-    if not isNoclipEnabled then
-        humanoid.PlatformStand = true
-    else
-        humanoid.PlatformStand = false
-    end
+    humanoid.PlatformStand = isNoclipEnabled
 end
 
 -- Variables to track noclip and teleport states
@@ -30,43 +26,36 @@ local isTeleportEnabled = false
 
 -- Get the UI elements
 local function getUiElements()
-    local screenGui = game.Players.LocalPlayer:FindFirstChildOfClass("PlayerGui"):FindFirstChild("NexaTestCheats")
-    if not screenGui then
-        warn("NexaTestCheats ScreenGui not found!")
-        return
-    end
-
-    local mainFrame = screenGui:FindFirstChild("MainFrame")
-    if not mainFrame then
-        warn("MainFrame not found!")
-        return
-    end
-
-    local noclipButton = mainFrame:FindFirstChild("NoclipButton")
-    local teleportButton = mainFrame:FindFirstChild("TeleportButton")
+    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    local screenGui = playerGui:WaitForChild("NexaTestCheats")
+    local mainFrame = screenGui:WaitForChild("MainFrame")
+    local noclipButton = mainFrame:WaitForChild("NoclipButton")
+    local teleportButton = mainFrame:WaitForChild("TeleportButton")
 
     return noclipButton, teleportButton
 end
 
--- Connect buttons to functions
-local noclipButton, teleportButton = getUiElements()
-if noclipButton and teleportButton then
-    noclipButton.MouseButton1Click:Connect(function()
-        isNoclipEnabled = not isNoclipEnabled
-        noclipButton.Text = isNoclipEnabled and "Noclip: ON" or "Noclip: OFF"
-        toggleNoclip()
-    end)
+-- Wait for the UI elements to be available
+local noclipButton, teleportButton
+repeat
+    noclipButton, teleportButton = getUiElements()
+    wait(1)
+until noclipButton and teleportButton
 
-    teleportButton.MouseButton1Click:Connect(function()
-        isTeleportEnabled = not isTeleportEnabled
-        teleportButton.Text = isTeleportEnabled and "Teleport: ON" or "Teleport: OFF"
-        if isTeleportEnabled then
-            teleportToBase()
-        end
-    end)
-else
-    warn("UI elements not found!")
-end
+-- Connect buttons to functions
+noclipButton.MouseButton1Click:Connect(function()
+    isNoclipEnabled = not isNoclipEnabled
+    noclipButton.Text = isNoclipEnabled and "Noclip: ON" or "Noclip: OFF"
+    toggleNoclip()
+end)
+
+teleportButton.MouseButton1Click:Connect(function()
+    isTeleportEnabled = not isTeleportEnabled
+    teleportButton.Text = isTeleportEnabled and "Teleport: ON" or "Teleport: OFF"
+    if isTeleportEnabled then
+        teleportToBase()
+    end
+end)
 
 -- Connect to the event when a Brainrot is stolen
 local function onBrainrotStolen()
