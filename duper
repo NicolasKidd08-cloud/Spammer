@@ -1,5 +1,4 @@
 -- NEXA Brainrot Tracker (SAFE / NON-EXPLOIT)
--- Client-side visual tracker only
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -19,26 +18,28 @@ local function createGui()
     gui.ResetOnSpawn = false
     gui.Parent = player:WaitForChild("PlayerGui")
 
-    local frame = Instance.new("Frame", gui)
+    local frame = Instance.new("Frame")
+    frame.Parent = gui
     frame.Size = UDim2.fromOffset(250, 190)
     frame.Position = UDim2.fromScale(0.5, 0.3)
     frame.AnchorPoint = Vector2.new(0.5, 0)
     frame.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
     frame.BorderSizePixel = 0
-
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
-    local title = Instance.new("TextLabel", frame)
+    local title = Instance.new("TextLabel")
+    title.Parent = frame
     title.Size = UDim2.new(1, -20, 0, 35)
     title.Position = UDim2.fromOffset(10, 0)
     title.BackgroundTransparency = 1
     title.Text = "🧠 NEXA Brainrot Tracker"
     title.Font = Enum.Font.GothamBold
     title.TextSize = 15
-    title.TextColor3 = Color3.fromRGB(0, 255, 136)
-    title.TextXAlignment = Left
+    title.TextColor3 = HIGHLIGHT_COLOR
+    title.TextXAlignment = Enum.TextXAlignment.Left
 
-    local status = Instance.new("TextLabel", frame)
+    local status = Instance.new("TextLabel")
+    status.Parent = frame
     status.Name = "Status"
     status.Size = UDim2.new(1, -20, 0, 25)
     status.Position = UDim2.fromOffset(10, 40)
@@ -47,9 +48,10 @@ local function createGui()
     status.Font = Enum.Font.Gotham
     status.TextSize = 12
     status.TextColor3 = Color3.fromRGB(200, 200, 200)
-    status.TextXAlignment = Left
+    status.TextXAlignment = Enum.TextXAlignment.Left
 
-    local counter = Instance.new("TextLabel", frame)
+    local counter = Instance.new("TextLabel")
+    counter.Parent = frame
     counter.Name = "Counter"
     counter.Size = UDim2.new(1, -20, 0, 20)
     counter.Position = UDim2.fromOffset(10, 65)
@@ -58,9 +60,10 @@ local function createGui()
     counter.Font = Enum.Font.Gotham
     counter.TextSize = 11
     counter.TextColor3 = Color3.fromRGB(150, 150, 150)
-    counter.TextXAlignment = Left
+    counter.TextXAlignment = Enum.TextXAlignment.Left
 
-    local toggle = Instance.new("TextButton", frame)
+    local toggle = Instance.new("TextButton")
+    toggle.Parent = frame
     toggle.Size = UDim2.fromOffset(220, 40)
     toggle.Position = UDim2.fromOffset(15, 100)
     toggle.Text = "Enable Tracker"
@@ -70,16 +73,15 @@ local function createGui()
     toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
     Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
 
-    return gui, frame, toggle, status, counter
+    return gui, toggle, status, counter
 end
 
 -------------------------------------------------
--- Brainrot detection (SAFE)
+-- Detection (SAFE)
 -------------------------------------------------
 
 local function isBrainrot(obj)
-    return obj:IsA("BasePart")
-        and obj.Name:lower():find("brain")
+    return obj:IsA("BasePart") and obj.Name:lower():find("brain")
 end
 
 local function addHighlight(part)
@@ -95,14 +97,14 @@ local function addHighlight(part)
 end
 
 local function clearAll()
-    for part, h in pairs(tracked) do
+    for _, h in pairs(tracked) do
         if h then h:Destroy() end
     end
     tracked = {}
 end
 
 -------------------------------------------------
--- Main loop (optimized)
+-- Loop
 -------------------------------------------------
 
 RunService.Heartbeat:Connect(function()
@@ -114,8 +116,7 @@ RunService.Heartbeat:Connect(function()
 
     for _, obj in ipairs(workspace:GetChildren()) do
         if isBrainrot(obj) then
-            local dist = (obj.Position - hrp.Position).Magnitude
-            if dist <= 12 then
+            if (obj.Position - hrp.Position).Magnitude <= 12 then
                 addHighlight(obj)
             end
         end
@@ -126,7 +127,7 @@ end)
 -- Boot
 -------------------------------------------------
 
-local gui, frame, button, status, counter = createGui()
+local gui, button, status, counter = createGui()
 
 button.MouseButton1Click:Connect(function()
     enabled = not enabled
@@ -146,8 +147,9 @@ button.MouseButton1Click:Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-    counter.Text = "Tracked: " .. tostring(#(tracked))
+    counter.Text = "Tracked: " .. tostring(#tracked)
 end)
 
-print("✓ NEXA Brainrot Tracker loaded (SAFE)")
+print("✓ NEXA Brainrot Tracker loaded")
+
 
