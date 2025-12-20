@@ -1,17 +1,15 @@
--- NEXA Complete Script with GUI
--- Auto-teleport & Noclip for Steal a Brainrot
-
--- Configuration
-local basePosition = Vector3.new(1234, 56, 789) -- Replace with your actual base coordinates
+-- NEXA Complete Script - With Save Position Feature
+-- Click "Save Position" to set your base location!
 
 -- Variables
+local basePosition = Vector3.new(0, 50, 0) -- Default spawn
 local isNoclipEnabled = false
 local isTeleportEnabled = false
 local noclipConnection = nil
+local player = game.Players.LocalPlayer
 
 -- Create GUI
 local function createGui()
-    local player = game.Players.LocalPlayer
     local playerGui = player:WaitForChild("PlayerGui")
     
     -- Remove old GUI if exists
@@ -28,8 +26,8 @@ local function createGui()
     -- Main Frame
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 200, 0, 150)
-    mainFrame.Position = UDim2.new(0.5, -100, 0.1, 0)
+    mainFrame.Size = UDim2.new(0, 220, 0, 235)
+    mainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
     mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     mainFrame.BorderSizePixel = 0
     mainFrame.Parent = screenGui
@@ -40,11 +38,11 @@ local function createGui()
     
     -- Title
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Size = UDim2.new(1, 0, 0, 35)
     title.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
     title.Text = "NEXA Cheats"
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 14
+    title.TextSize = 16
     title.TextColor3 = Color3.fromRGB(20, 20, 20)
     title.Parent = mainFrame
     
@@ -55,12 +53,12 @@ local function createGui()
     -- Noclip Button
     local noclipButton = Instance.new("TextButton")
     noclipButton.Name = "NoclipButton"
-    noclipButton.Size = UDim2.new(0, 180, 0, 35)
-    noclipButton.Position = UDim2.new(0, 10, 0, 45)
+    noclipButton.Size = UDim2.new(0, 200, 0, 35)
+    noclipButton.Position = UDim2.new(0, 10, 0, 50)
     noclipButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     noclipButton.Text = "Noclip: OFF"
     noclipButton.Font = Enum.Font.GothamBold
-    noclipButton.TextSize = 12
+    noclipButton.TextSize = 13
     noclipButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     noclipButton.Parent = mainFrame
     
@@ -68,21 +66,65 @@ local function createGui()
     noclipCorner.CornerRadius = UDim.new(0, 8)
     noclipCorner.Parent = noclipButton
     
-    -- Teleport Button
+    -- Auto-TP Button
     local teleportButton = Instance.new("TextButton")
     teleportButton.Name = "TeleportButton"
-    teleportButton.Size = UDim2.new(0, 180, 0, 35)
-    teleportButton.Position = UDim2.new(0, 10, 0, 90)
+    teleportButton.Size = UDim2.new(0, 200, 0, 35)
+    teleportButton.Position = UDim2.new(0, 10, 0, 95)
     teleportButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     teleportButton.Text = "Auto-TP: OFF"
     teleportButton.Font = Enum.Font.GothamBold
-    teleportButton.TextSize = 12
+    teleportButton.TextSize = 13
     teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     teleportButton.Parent = mainFrame
     
     local teleportCorner = Instance.new("UICorner")
     teleportCorner.CornerRadius = UDim.new(0, 8)
     teleportCorner.Parent = teleportButton
+    
+    -- Save Position Button (NEW!)
+    local saveButton = Instance.new("TextButton")
+    saveButton.Name = "SaveButton"
+    saveButton.Size = UDim2.new(0, 200, 0, 30)
+    saveButton.Position = UDim2.new(0, 10, 0, 140)
+    saveButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    saveButton.Text = "💾 Save Position"
+    saveButton.Font = Enum.Font.GothamBold
+    saveButton.TextSize = 12
+    saveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    saveButton.Parent = mainFrame
+    
+    local saveCorner = Instance.new("UICorner")
+    saveCorner.CornerRadius = UDim.new(0, 6)
+    saveCorner.Parent = saveButton
+    
+    -- TP to Saved Button
+    local tpNowButton = Instance.new("TextButton")
+    tpNowButton.Name = "TPNowButton"
+    tpNowButton.Size = UDim2.new(0, 200, 0, 30)
+    tpNowButton.Position = UDim2.new(0, 10, 0, 178)
+    tpNowButton.BackgroundColor3 = Color3.fromRGB(31, 111, 235)
+    tpNowButton.Text = "📍 TP to Saved"
+    tpNowButton.Font = Enum.Font.GothamBold
+    tpNowButton.TextSize = 12
+    tpNowButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tpNowButton.Parent = mainFrame
+    
+    local tpNowCorner = Instance.new("UICorner")
+    tpNowCorner.CornerRadius = UDim.new(0, 6)
+    tpNowCorner.Parent = tpNowButton
+    
+    -- Position Display
+    local posDisplay = Instance.new("TextLabel")
+    posDisplay.Name = "PosDisplay"
+    posDisplay.Size = UDim2.new(0, 200, 0, 20)
+    posDisplay.Position = UDim2.new(0, 10, 0, 213)
+    posDisplay.BackgroundTransparency = 1
+    posDisplay.Text = "No position saved"
+    posDisplay.Font = Enum.Font.Gotham
+    posDisplay.TextSize = 9
+    posDisplay.TextColor3 = Color3.fromRGB(150, 150, 150)
+    posDisplay.Parent = mainFrame
     
     -- Make draggable
     local dragging = false
@@ -120,97 +162,156 @@ local function createGui()
         end
     end)
     
-    return noclipButton, teleportButton
+    return noclipButton, teleportButton, saveButton, tpNowButton, posDisplay
 end
 
 -- Teleport function
 local function teleportToBase()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    
-    humanoidRootPart.CFrame = CFrame.new(basePosition)
-    print("✓ Teleported to base!")
+    pcall(function()
+        local character = player.Character
+        if not character then return end
+        
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then return end
+        
+        humanoidRootPart.CFrame = CFrame.new(basePosition)
+        print("✓ Teleported to:", basePosition)
+    end)
+end
+
+-- Save current position
+local function saveCurrentPosition(posDisplay)
+    pcall(function()
+        local character = player.Character
+        if not character then 
+            print("❌ No character found")
+            return 
+        end
+        
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then 
+            print("❌ No HumanoidRootPart found")
+            return 
+        end
+        
+        -- Save position
+        basePosition = humanoidRootPart.Position
+        
+        -- Update display
+        local x = math.floor(basePosition.X)
+        local y = math.floor(basePosition.Y)
+        local z = math.floor(basePosition.Z)
+        posDisplay.Text = string.format("Saved: %d, %d, %d", x, y, z)
+        posDisplay.TextColor3 = Color3.fromRGB(0, 255, 136)
+        
+        print("✓ Position saved:", basePosition)
+        
+        -- Flash the save button
+        local saveBtn = posDisplay.Parent:FindFirstChild("SaveButton")
+        if saveBtn then
+            saveBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+            wait(0.3)
+            saveBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        end
+    end)
 end
 
 -- Noclip function
-local function toggleNoclip()
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+local function setNoclip(enabled)
+    local character = player.Character
+    if not character then return end
     
-    if isNoclipEnabled then
-        -- Enable noclip
+    if enabled then
         noclipConnection = game:GetService("RunService").Stepped:Connect(function()
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
+            pcall(function()
+                if player.Character then
+                    for _, part in pairs(player.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
                     end
                 end
-            end
+            end)
         end)
-        print("✓ Noclip enabled")
+        print("✓ Noclip ENABLED")
     else
-        -- Disable noclip
         if noclipConnection then
             noclipConnection:Disconnect()
             noclipConnection = nil
         end
         
-        if character then
-            for _, part in pairs(character:GetDescendants()) do
-                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                    part.CanCollide = true
+        pcall(function()
+            if player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
                 end
             end
-        end
-        print("✓ Noclip disabled")
+        end)
+        print("✓ Noclip DISABLED")
     end
+end
+
+-- Auto-TP loop
+local function startAutoTP()
+    spawn(function()
+        while isTeleportEnabled do
+            teleportToBase()
+            wait(5)
+        end
+    end)
 end
 
 -- Main execution
 print("🚀 Loading NEXA Cheats...")
 
 -- Create GUI
-local noclipButton, teleportButton = createGui()
+local noclipButton, teleportButton, saveButton, tpNowButton, posDisplay = createGui()
 
--- Connect buttons
+-- Connect Noclip Button
 noclipButton.MouseButton1Click:Connect(function()
     isNoclipEnabled = not isNoclipEnabled
     noclipButton.Text = isNoclipEnabled and "Noclip: ON" or "Noclip: OFF"
     noclipButton.BackgroundColor3 = isNoclipEnabled and Color3.fromRGB(0, 255, 136) or Color3.fromRGB(60, 60, 60)
-    toggleNoclip()
+    setNoclip(isNoclipEnabled)
 end)
 
+-- Connect Auto-TP Button
 teleportButton.MouseButton1Click:Connect(function()
     isTeleportEnabled = not isTeleportEnabled
     teleportButton.Text = isTeleportEnabled and "Auto-TP: ON" or "Auto-TP: OFF"
     teleportButton.BackgroundColor3 = isTeleportEnabled and Color3.fromRGB(0, 255, 136) or Color3.fromRGB(60, 60, 60)
     
     if isTeleportEnabled then
-        teleportToBase()
-    end
-end)
-
--- Auto-teleport on Brainrot stolen
-local function onBrainrotStolen()
-    if isTeleportEnabled then
-        print("🎯 Brainrot stolen! Auto-teleporting...")
-        teleportToBase()
-    end
-end
-
--- Try to connect to BrainrotStolen event
-pcall(function()
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    local brainrotStolenEvent = replicatedStorage:WaitForChild("BrainrotStolen", 5)
-    
-    if brainrotStolenEvent then
-        brainrotStolenEvent.OnClientEvent:Connect(onBrainrotStolen)
-        print("✓ Connected to BrainrotStolen event!")
+        print("✓ Auto-TP started (every 5 seconds)")
+        startAutoTP()
     else
-        warn("⚠ BrainrotStolen event not found - Auto-TP on steal won't work")
+        print("✓ Auto-TP stopped")
     end
 end)
 
-print("✓ NEXA Cheats loaded successfully!")
+-- Connect Save Position Button (NEW!)
+saveButton.MouseButton1Click:Connect(function()
+    saveCurrentPosition(posDisplay)
+end)
+
+-- Connect TP to Saved Button
+tpNowButton.MouseButton1Click:Connect(function()
+    teleportToBase()
+end)
+
+-- Re-enable noclip on respawn
+player.CharacterAdded:Connect(function(character)
+    wait(1)
+    if isNoclipEnabled then
+        print("Character respawned - re-enabling noclip...")
+        setNoclip(false)
+        wait(0.1)
+        setNoclip(true)
+    end
+end)
+
+print("✓ NEXA Cheats loaded!")
+print("✓ Stand at your base and click 'Save Position'")
+print("✓ Then use 'TP to Saved' or enable 'Auto-TP'")
