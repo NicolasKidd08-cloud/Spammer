@@ -1,13 +1,11 @@
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NexaAutoPickupGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
-
 
 -- Create Main Frame
 local frame = Instance.new("Frame")
@@ -19,17 +17,14 @@ frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
 
-
 local frameCorner = Instance.new("UICorner")
 frameCorner.CornerRadius = UDim.new(0, 12)
 frameCorner.Parent = frame
-
 
 -- Create Rainbow Outline
 local outline = Instance.new("UIStroke")
 outline.Thickness = 3
 outline.Parent = frame
-
 
 -- Rainbow animation for outline
 local hue = 0
@@ -38,7 +33,6 @@ game:GetService("RunService").Heartbeat:Connect(function()
     if hue >= 1 then hue = 0 end
     outline.Color = Color3.fromHSV(hue, 1, 1)
 end)
-
 
 -- Create Toggle Button
 local button = Instance.new("TextButton")
@@ -52,11 +46,9 @@ button.TextSize = 14
 button.BorderSizePixel = 0
 button.Parent = frame
 
-
 local buttonCorner = Instance.new("UICorner")
 buttonCorner.CornerRadius = UDim.new(0, 8)
 buttonCorner.Parent = button
-
 
 -- Button stroke
 local buttonStroke = Instance.new("UIStroke")
@@ -64,10 +56,8 @@ buttonStroke.Thickness = 2
 buttonStroke.Color = Color3.fromRGB(0, 80, 0)
 buttonStroke.Parent = button
 
-
 -- State variable
 local instaPickupEnabled = false
-
 
 -- Toggle function
 button.MouseButton1Click:Connect(function()
@@ -84,39 +74,52 @@ button.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Improved pickup logic
+local pickedUpItems = {}
+local checkInterval = 0.1
 
--- Instant pickup logic - Auto pickup without holding E (optimized to reduce lag)
-local lastCheck = 0
-local checkInterval = 0.5 -- Check every 0.5 seconds instead of every frame
-
-
-game:GetService("RunService").Heartbeat:Connect(function()
-    if not instaPickupEnabled then return end
-   
-    local currentTime = tick()
-    if currentTime - lastCheck < checkInterval then return end
-    lastCheck = currentTime
-   
-    local character = player.Character
-    if not character then return end
-   
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-   
-    -- Check for ProximityPrompts near the player
-    for _, item in pairs(workspace:GetDescendants()) do
-        if item:IsA("ProximityPrompt") then
-            local promptParent = item.Parent
-            if promptParent and promptParent:IsA("BasePart") then
-                -- Check if it's a Brainrot item
-                if item.ObjectText:lower():find("brainrot") or promptParent.Name:lower():find("brainrot") then
+task.spawn(function()
+    while task.wait(checkInterval) do
+        if not instaPickupEnabled then continue end
+       
+        local character = player.Character
+        if not character then continue end
+       
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if not rootPart then continue end
+       
+        -- Search for ProximityPrompts in workspace
+        for _, descendant in pairs(workspace:GetDescendants()) do
+            if descendant:IsA("ProximityPrompt") and descendant.Enabled then
+                local promptParent = descendant.Parent
+                
+                if promptParent and promptParent:IsA("BasePart") then
+                    -- Calculate distance
                     local distance = (promptParent.Position - rootPart.Position).Magnitude
                    
-                    if distance <= item.MaxActivationDistance then
-                        -- Trigger the prompt instantly
-                        item:InputHoldBegin()
-                        item:InputHoldEnd()
-                        break -- Only pick up one item per check to reduce lag
+                    -- Check if within range and not already picked up
+                    if distance <= descendant.MaxActivationDistance then
+                        local itemId = promptParent:GetFullName()
+                        
+                        if not pickedUpItems[itemId] then
+                            -- Mark as picked up to avoid spam
+                            pickedUpItems[itemId] = true
+                            
+                            -- Trigger the proximity prompt
+                            task.spawn(function()
+                                pcall(function()
+                                    fireproximityprompt(descendant)
+                                end)
+                            end)
+                            
+                            -- Clear from picked up list after delay
+                            task.delay(2, function()
+                                pickedUpItems[itemId] = nil
+                            end)
+                            
+                            -- Small delay to prevent overwhelming the server
+                            task.wait(0.05)
+                        end
                     end
                 end
             end
@@ -124,3 +127,23 @@ game:GetService("RunService").Heartbeat:Connect(function()
     end
 end)
 
+-- Cleanup picked up items table periodically
+task.spawn(function()
+    while task.wait(10) do
+        -- Clear old entries
+        for id, _ in pairs(pickedUpItems) do
+            local success = pcall(function()
+                local parts = string.split(id, ".")
+                local obj = workspace
+                for _, part in ipairs(parts) do
+                    obj = obj:FindFirstChild(part)
+                    if not obj then break end
+                end
+                -- If object doesn't exist anymore, remove from table
+                if not obj then
+                    pickedUpItems[id] = nil
+                end
+            end)
+        end
+    end
+end)
