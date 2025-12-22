@@ -1,5 +1,5 @@
--- NEXA ROBLOX JOB MONITOR - COMPLETE VERSION
--- Features: Auto-join, Manual click, Spammer, Keybind settings
+-- NEXA ROBLOX JOB MONITOR - AUTO-PASTE TO CHILLI
+-- No job ID input - automatically sends to Chilli Hub
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -16,10 +16,12 @@ local PLACE_ID = game.PlaceId
 -- Settings
 local Settings = {
 	ToggleKeybind = Enum.KeyCode.RightControl,
-	AutoJoinNew = false,  -- Start with auto-join OFF
-	SpammerEnabled = false,
-	SpammerDelay = 0.1  -- Very fast spamming (0.1 seconds)
+	AutoPasteToChilli = true,  -- Auto-paste to Chilli
+	AutoClickChilli = true     -- Auto-click Chilli's join button
 }
+
+-- Hidden job ID storage (for passing to Chilli)
+local currentJobId = ""
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
@@ -32,8 +34,8 @@ screenGui.Parent = playerGui
 -- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 420, 0, 600)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -300)
+mainFrame.Size = UDim2.new(0, 420, 0, 550)  -- Shorter since no job ID box
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -275)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -86,7 +88,7 @@ subtitle.Size = UDim2.new(0.5, 0, 0, 20)
 subtitle.Position = UDim2.new(0, 20, 1, -25)
 subtitle.BackgroundTransparency = 1
 subtitle.Font = Enum.Font.Gotham
-subtitle.Text = "Job Monitor"
+subtitle.Text = "Job Monitor → Chilli"
 subtitle.TextColor3 = Color3.fromRGB(15, 20, 25)
 subtitle.TextSize = 12
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
@@ -121,7 +123,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 8)
 closeCorner.Parent = closeButton
 
--- Settings Button (moved to left to avoid overlap)
+-- Settings Button
 local settingsButton = Instance.new("TextButton")
 settingsButton.Size = UDim2.new(0, 35, 0, 35)
 settingsButton.Position = UDim2.new(1, -90, 0, 17.5)
@@ -136,151 +138,57 @@ local settingsCorner = Instance.new("UICorner")
 settingsCorner.CornerRadius = UDim.new(0, 8)
 settingsCorner.Parent = settingsButton
 
--- Job ID Section
-local jobIdFrame = Instance.new("Frame")
-jobIdFrame.Size = UDim2.new(1, -30, 0, 90)
-jobIdFrame.Position = UDim2.new(0, 15, 0, 85)
-jobIdFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-jobIdFrame.BorderSizePixel = 0
-jobIdFrame.Parent = mainFrame
+-- Status Info Panel (shows current job ID being sent)
+local infoPanel = Instance.new("Frame")
+infoPanel.Size = UDim2.new(1, -30, 0, 60)
+infoPanel.Position = UDim2.new(0, 15, 0, 85)
+infoPanel.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+infoPanel.BorderSizePixel = 0
+infoPanel.Parent = mainFrame
 
-local jobIdCorner = Instance.new("UICorner")
-jobIdCorner.CornerRadius = UDim.new(0, 10)
-jobIdCorner.Parent = jobIdFrame
+local infoPanelCorner = Instance.new("UICorner")
+infoPanelCorner.CornerRadius = UDim.new(0, 10)
+infoPanelCorner.Parent = infoPanel
 
-local jobIdLabel = Instance.new("TextLabel")
-jobIdLabel.Size = UDim2.new(1, -20, 0, 28)
-jobIdLabel.Position = UDim2.new(0, 12, 0, 8)
-jobIdLabel.BackgroundTransparency = 1
-jobIdLabel.Font = Enum.Font.GothamBold
-jobIdLabel.Text = "🔑 JOB ID (Click jobs to join)"
-jobIdLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
-jobIdLabel.TextSize = 13
-jobIdLabel.TextXAlignment = Enum.TextXAlignment.Left
-jobIdLabel.Parent = jobIdFrame
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -20, 0, 20)
+infoLabel.Position = UDim2.new(0, 10, 0, 8)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Font = Enum.Font.GothamBold
+infoLabel.Text = "🔗 AUTO-PASTE TO CHILLI"
+infoLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
+infoLabel.TextSize = 13
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.Parent = infoPanel
 
-local jobIdInput = Instance.new("TextBox")
-jobIdInput.Size = UDim2.new(1, -24, 0, 38)
-jobIdInput.Position = UDim2.new(0, 12, 0, 42)
-jobIdInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-jobIdInput.Font = Enum.Font.Gotham
-jobIdInput.PlaceholderText = "Waiting for job..."
-jobIdInput.PlaceholderColor3 = Color3.fromRGB(120, 120, 120)
-jobIdInput.Text = ""
-jobIdInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-jobIdInput.TextSize = 14
-jobIdInput.ClearTextOnFocus = false
-jobIdInput.TextXAlignment = Enum.TextXAlignment.Left
-jobIdInput.TextTruncate = Enum.TextTruncate.None
-jobIdInput.TextWrapped = false
-jobIdInput.ClipsDescendants = true
-jobIdInput.Parent = jobIdFrame
-
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 8)
-inputCorner.Parent = jobIdInput
-
-local inputPadding = Instance.new("UIPadding")
-inputPadding.PaddingLeft = UDim.new(0, 8)
-inputPadding.PaddingRight = UDim.new(0, 8)
-inputPadding.Parent = jobIdInput
-
--- Toggle Buttons Frame (Auto-Join and Spammer side by side)
-local togglesFrame = Instance.new("Frame")
-togglesFrame.Size = UDim2.new(1, -30, 0, 45)
-togglesFrame.Position = UDim2.new(0, 15, 0, 185)
-togglesFrame.BackgroundTransparency = 1
-togglesFrame.Parent = mainFrame
-
--- Auto-Join Toggle
-local autoJoinFrame = Instance.new("Frame")
-autoJoinFrame.Size = UDim2.new(0.48, 0, 1, 0)
-autoJoinFrame.Position = UDim2.new(0, 0, 0, 0)
-autoJoinFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-autoJoinFrame.BorderSizePixel = 0
-autoJoinFrame.Parent = togglesFrame
-
-local autoJoinCorner = Instance.new("UICorner")
-autoJoinCorner.CornerRadius = UDim.new(0, 10)
-autoJoinCorner.Parent = autoJoinFrame
-
-local autoJoinLabel = Instance.new("TextLabel")
-autoJoinLabel.Size = UDim2.new(0.6, 0, 1, 0)
-autoJoinLabel.Position = UDim2.new(0, 8, 0, 0)
-autoJoinLabel.BackgroundTransparency = 1
-autoJoinLabel.Font = Enum.Font.GothamBold
-autoJoinLabel.Text = "⚡ AUTO-JOIN"
-autoJoinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoJoinLabel.TextSize = 11
-autoJoinLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoJoinLabel.Parent = autoJoinFrame
-
-local autoJoinToggle = Instance.new("TextButton")
-autoJoinToggle.Size = UDim2.new(0, 55, 0, 28)
-autoJoinToggle.Position = UDim2.new(1, -60, 0.5, -14)
-autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-autoJoinToggle.Font = Enum.Font.GothamBold
-autoJoinToggle.Text = "OFF"
-autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoJoinToggle.TextSize = 11
-autoJoinToggle.Parent = autoJoinFrame
-
-local autoJoinToggleCorner = Instance.new("UICorner")
-autoJoinToggleCorner.CornerRadius = UDim.new(0, 8)
-autoJoinToggleCorner.Parent = autoJoinToggle
-
--- Spammer Toggle
-local spammerFrame = Instance.new("Frame")
-spammerFrame.Size = UDim2.new(0.48, 0, 1, 0)
-spammerFrame.Position = UDim2.new(0.52, 0, 0, 0)
-spammerFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-spammerFrame.BorderSizePixel = 0
-spammerFrame.Parent = togglesFrame
-
-local spammerCorner = Instance.new("UICorner")
-spammerCorner.CornerRadius = UDim.new(0, 10)
-spammerCorner.Parent = spammerFrame
-
-local spammerLabel = Instance.new("TextLabel")
-spammerLabel.Size = UDim2.new(0.6, 0, 1, 0)
-spammerLabel.Position = UDim2.new(0, 8, 0, 0)
-spammerLabel.BackgroundTransparency = 1
-spammerLabel.Font = Enum.Font.GothamBold
-spammerLabel.Text = "🔄 SPAMMER"
-spammerLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-spammerLabel.TextSize = 11
-spammerLabel.TextXAlignment = Enum.TextXAlignment.Left
-spammerLabel.Parent = spammerFrame
-
-local spammerToggle = Instance.new("TextButton")
-spammerToggle.Size = UDim2.new(0, 55, 0, 28)
-spammerToggle.Position = UDim2.new(1, -60, 0.5, -14)
-spammerToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-spammerToggle.Font = Enum.Font.GothamBold
-spammerToggle.Text = "OFF"
-spammerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-spammerToggle.TextSize = 11
-spammerToggle.Parent = spammerFrame
-
-local spammerToggleCorner = Instance.new("UICorner")
-spammerToggleCorner.CornerRadius = UDim.new(0, 8)
-spammerToggleCorner.Parent = spammerToggle
+local currentJobLabel = Instance.new("TextLabel")
+currentJobLabel.Name = "CurrentJobLabel"
+currentJobLabel.Size = UDim2.new(1, -20, 0, 24)
+currentJobLabel.Position = UDim2.new(0, 10, 0, 30)
+currentJobLabel.BackgroundTransparency = 1
+currentJobLabel.Font = Enum.Font.Gotham
+currentJobLabel.Text = "Waiting for new job..."
+currentJobLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+currentJobLabel.TextSize = 11
+currentJobLabel.TextXAlignment = Enum.TextXAlignment.Left
+currentJobLabel.TextWrapped = true
+currentJobLabel.Parent = infoPanel
 
 -- Jobs List
 local jobsLabel = Instance.new("TextLabel")
 jobsLabel.Size = UDim2.new(1, -30, 0, 28)
-jobsLabel.Position = UDim2.new(0, 15, 0, 240)
+jobsLabel.Position = UDim2.new(0, 15, 0, 155)
 jobsLabel.BackgroundTransparency = 1
 jobsLabel.Font = Enum.Font.GothamBold
-jobsLabel.Text = "📋 RECENT JOBS (Click to join)"
+jobsLabel.Text = "📋 RECENT JOBS (Auto-sent to Chilli)"
 jobsLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
 jobsLabel.TextSize = 14
 jobsLabel.TextXAlignment = Enum.TextXAlignment.Left
 jobsLabel.Parent = mainFrame
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -30, 1, -285)
-scrollFrame.Position = UDim2.new(0, 15, 0, 273)
+scrollFrame.Size = UDim2.new(1, -30, 1, -200)
+scrollFrame.Position = UDim2.new(0, 15, 0, 188)
 scrollFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 8
@@ -307,8 +215,8 @@ listPadding.Parent = scrollFrame
 -- Settings Panel
 local settingsPanel = Instance.new("Frame")
 settingsPanel.Name = "SettingsPanel"
-settingsPanel.Size = UDim2.new(0, 350, 0, 300)
-settingsPanel.Position = UDim2.new(0.5, -175, 0.5, -150)
+settingsPanel.Size = UDim2.new(0, 350, 0, 220)
+settingsPanel.Position = UDim2.new(0.5, -175, 0.5, -110)
 settingsPanel.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 settingsPanel.BorderSizePixel = 0
 settingsPanel.Visible = false
@@ -403,54 +311,50 @@ local keybindButtonCorner = Instance.new("UICorner")
 keybindButtonCorner.CornerRadius = UDim.new(0, 6)
 keybindButtonCorner.Parent = keybindButton
 
--- Auto-Join New Jobs Toggle (removed - now in main UI)
+-- Auto-Click Chilli Toggle
+local autoClickFrame = Instance.new("Frame")
+autoClickFrame.Size = UDim2.new(1, -30, 0, 50)
+autoClickFrame.Position = UDim2.new(0, 15, 0, 145)
+autoClickFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
+autoClickFrame.BorderSizePixel = 0
+autoClickFrame.Parent = settingsPanel
 
--- Spammer Delay Setting
-local delayFrame = Instance.new("Frame")
-delayFrame.Size = UDim2.new(1, -30, 0, 70)
-delayFrame.Position = UDim2.new(0, 15, 0, 145)
-delayFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-delayFrame.BorderSizePixel = 0
-delayFrame.Parent = settingsPanel
+local autoClickCorner = Instance.new("UICorner")
+autoClickCorner.CornerRadius = UDim.new(0, 8)
+autoClickCorner.Parent = autoClickFrame
 
-local delayCorner = Instance.new("UICorner")
-delayCorner.CornerRadius = UDim.new(0, 8)
-delayCorner.Parent = delayFrame
+local autoClickLabel = Instance.new("TextLabel")
+autoClickLabel.Size = UDim2.new(0.7, 0, 1, 0)
+autoClickLabel.Position = UDim2.new(0, 10, 0, 0)
+autoClickLabel.BackgroundTransparency = 1
+autoClickLabel.Font = Enum.Font.GothamBold
+autoClickLabel.Text = "🖱 Auto-Click Chilli Join"
+autoClickLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+autoClickLabel.TextSize = 13
+autoClickLabel.TextXAlignment = Enum.TextXAlignment.Left
+autoClickLabel.Parent = autoClickFrame
 
-local delayLabel = Instance.new("TextLabel")
-delayLabel.Size = UDim2.new(1, -20, 0, 25)
-delayLabel.Position = UDim2.new(0, 10, 0, 8)
-delayLabel.BackgroundTransparency = 1
-delayLabel.Font = Enum.Font.GothamBold
-delayLabel.Text = "⏱ Spammer Delay (seconds)"
-delayLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
-delayLabel.TextSize = 13
-delayLabel.TextXAlignment = Enum.TextXAlignment.Left
-delayLabel.Parent = delayFrame
+local autoClickToggle = Instance.new("TextButton")
+autoClickToggle.Size = UDim2.new(0, 70, 0, 30)
+autoClickToggle.Position = UDim2.new(1, -80, 0.5, -15)
+autoClickToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+autoClickToggle.Font = Enum.Font.GothamBold
+autoClickToggle.Text = "ON"
+autoClickToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+autoClickToggle.TextSize = 12
+autoClickToggle.Parent = autoClickFrame
 
-local delayInput = Instance.new("TextBox")
-delayInput.Size = UDim2.new(1, -20, 0, 30)
-delayInput.Position = UDim2.new(0, 10, 0, 32)
-delayInput.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-delayInput.Font = Enum.Font.Gotham
-delayInput.Text = "0.1"
-delayInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-delayInput.TextSize = 12
-delayInput.Parent = delayFrame
-
-local delayInputCorner = Instance.new("UICorner")
-delayInputCorner.CornerRadius = UDim.new(0, 6)
-delayInputCorner.Parent = delayInput
+local autoClickToggleCorner = Instance.new("UICorner")
+autoClickToggleCorner.CornerRadius = UDim.new(0, 8)
+autoClickToggleCorner.Parent = autoClickToggle
 
 -- Variables
 local isConnected = false
 local lastJobId = nil
 local connectionAttempts = 0
-local joining = false
-local spammerRunning = false
 local listeningForKeybind = false
 
--- Notification system (simplified - no tween to avoid black screen)
+-- Notification system
 local function showNotification(text, color)
 	local notif = Instance.new("TextLabel")
 	notif.Size = UDim2.new(0, 300, 0, 50)
@@ -466,7 +370,6 @@ local function showNotification(text, color)
 	notifCorner.CornerRadius = UDim.new(0, 10)
 	notifCorner.Parent = notif
 	
-	-- Simple fade instead of tween
 	task.wait(2)
 	notif:Destroy()
 end
@@ -483,13 +386,78 @@ local function updateConnectionStatus(connected)
 	end
 end
 
+-- FUNCTION TO PASTE INTO CHILLI HUB
+local function pasteToChilli(jobId, jobName)
+	if not jobId or jobId == "" then return false end
+	
+	pcall(function()
+		-- Find Chilli Hub
+		local chilliGui = nil
+		for _, gui in pairs(playerGui:GetChildren()) do
+			if gui.Name:lower():find("chilli") or gui:FindFirstChild("ChilliHub") then
+				chilliGui = gui
+				break
+			end
+		end
+		
+		if not chilliGui then
+			print("⚠ Chilli Hub not found")
+			return false
+		end
+		
+		-- Find Job ID input in Servers section
+		for _, obj in pairs(chilliGui:GetDescendants()) do
+			if obj:IsA("TextBox") then
+				local name = obj.Name:lower()
+				local placeholder = obj.PlaceholderText and obj.PlaceholderText:lower() or ""
+				
+				if name:find("job") or placeholder:find("job") or placeholder:find("id") then
+					-- Found it! Paste the job ID
+					obj.Text = jobId
+					print("✅ Pasted to Chilli:", jobId)
+					
+					-- Update UI
+					currentJobLabel.Text = "📤 Sent: " .. jobName .. "\n🔑 " .. jobId
+					currentJobLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
+					
+					-- Auto-click join button if enabled
+					if Settings.AutoClickChilli then
+						task.wait(0.3)
+						
+						-- Find and click join button
+						for _, btn in pairs(chilliGui:GetDescendants()) do
+							if btn:IsA("TextButton") then
+								local btnText = btn.Text:lower()
+								if btnText:find("join") or btnText:find("enter") or btnText:find("teleport") then
+									pcall(function()
+										-- Try to click it
+										for _, connection in pairs(getconnections(btn.MouseButton1Click)) do
+											connection:Fire()
+										end
+										btn.MouseButton1Click:Fire()
+									end)
+									print("✅ Clicked Chilli join button")
+									break
+								end
+							end
+						end
+					end
+					
+					return true
+				end
+			end
+		end
+		
+		print("❌ Chilli Job ID input not found - make sure you're on Servers tab")
+		return false
+	end)
+end
+
 local function createJobCard(jobData)
-	local card = Instance.new("TextButton")
+	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, -16, 0, 75)
 	card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
 	card.BorderSizePixel = 0
-	card.AutoButtonColor = false
-	card.Text = ""
 	
 	local cardCorner = Instance.new("UICorner")
 	cardCorner.CornerRadius = UDim.new(0, 8)
@@ -546,52 +514,27 @@ local function createJobCard(jobData)
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
 	
-	-- Click to instant join (no delay, no spam)
-	card.MouseButton1Click:Connect(function()
-		if jobData.jobId and not joining then
-			jobIdInput.Text = jobData.jobId
-			showNotification("🚀 Joining: " .. jobData.name, Color3.fromRGB(0, 217, 255))
-			
-			-- Immediate join
-			joining = true
-			
-			print("NEXA: Manual join - ", jobData.jobId)
-			local success, errorMsg = pcall(function()
-				TeleportService:TeleportToPlaceInstance(PLACE_ID, jobData.jobId, player)
-			end)
-			
-			if not success then
-				local errorDisplay = "Failed to join"
-				if string.find(tostring(errorMsg), "not found") then
-					errorDisplay = "Server not found"
-				elseif string.find(tostring(errorMsg), "full") then
-					errorDisplay = "Server full"
-				end
-				
-				showNotification("❌ " .. errorDisplay, Color3.fromRGB(255, 68, 68))
-				task.wait(2)
-				joining = false
-			else
-				print("NEXA: Teleporting...")
-			end
-		end
-	end)
+	-- Add sent indicator
+	local sentIcon = Instance.new("TextLabel")
+	sentIcon.Size = UDim2.new(0, 50, 0, 20)
+	sentIcon.Position = UDim2.new(1, -58, 0, 6)
+	sentIcon.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+	sentIcon.Font = Enum.Font.GothamBold
+	sentIcon.Text = "SENT ✓"
+	sentIcon.TextColor3 = Color3.fromRGB(15, 20, 25)
+	sentIcon.TextSize = 9
+	sentIcon.Parent = card
 	
-	-- Hover effect
-	card.MouseEnter:Connect(function()
-		cardStroke.Transparency = 0.3
-	end)
-	
-	card.MouseLeave:Connect(function()
-		cardStroke.Transparency = 0.7
-	end)
+	local sentCorner = Instance.new("UICorner")
+	sentCorner.CornerRadius = UDim.new(0, 4)
+	sentCorner.Parent = sentIcon
 	
 	return card
 end
 
 local function updateJobsList(jobs)
 	for _, child in ipairs(scrollFrame:GetChildren()) do
-		if child:IsA("TextButton") then
+		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
@@ -604,71 +547,6 @@ local function updateJobsList(jobs)
 	
 	task.wait(0.1)
 	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
-end
-
--- AUTO-JOIN FUNCTION (for new jobs from desktop)
-local function autoJoinNewJob()
-	if not Settings.AutoJoinNew or joining then return end
-	
-	local jobId = jobIdInput.Text
-	jobId = string.gsub(jobId, "^%s*(.-)%s*$", "%1")
-	
-	if jobId == "" or jobId == "Waiting for job..." then
-		return
-	end
-	
-	joining = true
-	
-	print("NEXA: Auto-joining new job -", jobId)
-	
-	local success, errorMsg = pcall(function()
-		TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, player)
-	end)
-	
-	if not success then
-		local errorDisplay = "Failed to join"
-		if string.find(tostring(errorMsg), "not found") then
-			errorDisplay = "Server not found"
-		elseif string.find(tostring(errorMsg), "full") then
-			errorDisplay = "Server full"
-		end
-		
-		showNotification("❌ " .. errorDisplay, Color3.fromRGB(255, 68, 68))
-		print("NEXA: Auto-join failed -", errorMsg)
-		task.wait(2)
-		joining = false
-	else
-		print("NEXA: Teleporting...")
-	end
-end
-
--- SPAMMER FUNCTION (keeps trying until disabled)
-local function startSpammer()
-	spammerRunning = true
-	
-	task.spawn(function()
-		while spammerRunning and Settings.SpammerEnabled do
-			local jobId = jobIdInput.Text
-			jobId = string.gsub(jobId, "^%s*(.-)%s*$", "%1")
-			
-			if jobId ~= "" and jobId ~= "Waiting for job..." then
-				print("NEXA: Spammer attempt -", jobId)
-				
-				pcall(function()
-					TeleportService:TeleportToPlaceInstance(PLACE_ID, jobId, player)
-				end)
-			end
-			
-			task.wait(Settings.SpammerDelay)
-		end
-		
-		spammerRunning = false
-	end)
-end
-
-local function stopSpammer()
-	spammerRunning = false
-	Settings.SpammerEnabled = false
 end
 
 -- FETCH JOBS FUNCTION
@@ -691,16 +569,29 @@ local function fetchJobs()
 				local latestJob = data.jobs[1]
 				if latestJob and latestJob.jobId and latestJob.jobId ~= lastJobId then
 					lastJobId = latestJob.jobId
-					jobIdInput.Text = latestJob.jobId
+					currentJobId = latestJob.jobId
+					
+					print("")
+					print("🔥 NEW JOB DETECTED:", latestJob.name)
+					print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 					
 					task.spawn(function()
 						showNotification("🔥 New Job: " .. latestJob.name, Color3.fromRGB(0, 217, 255))
 					end)
 					
-					-- Auto-join if enabled
-					if Settings.AutoJoinNew then
-						task.wait(0.3)
-						autoJoinNewJob()
+					-- Auto-paste to Chilli
+					if Settings.AutoPasteToChilli then
+						task.wait(0.5)
+						local success = pasteToChilli(latestJob.jobId, latestJob.name)
+						
+						if success then
+							print("✅ Successfully sent to Chilli Hub!")
+							print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+							showNotification("✅ Sent to Chilli!", Color3.fromRGB(0, 255, 136))
+						else
+							print("❌ Failed to send to Chilli")
+							print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+						end
 					end
 				end
 			end
@@ -734,56 +625,26 @@ settingsCloseButton.MouseButton1Click:Connect(function()
 	settingsPanel.Visible = false
 end)
 
--- Main UI Auto-Join Toggle
-autoJoinToggle.MouseButton1Click:Connect(function()
-	Settings.AutoJoinNew = not Settings.AutoJoinNew
+autoClickToggle.MouseButton1Click:Connect(function()
+	Settings.AutoClickChilli = not Settings.AutoClickChilli
 	
-	if Settings.AutoJoinNew then
-		autoJoinToggle.Text = "ON"
-		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-		autoJoinToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-		showNotification("⚡ Auto-Join ENABLED", Color3.fromRGB(0, 255, 136))
+	if Settings.AutoClickChilli then
+		autoClickToggle.Text = "ON"
+		autoClickToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		autoClickToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
+		showNotification("🖱 Auto-Click ON", Color3.fromRGB(0, 255, 136))
 	else
-		autoJoinToggle.Text = "OFF"
-		autoJoinToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		autoJoinToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		showNotification("⏹ Auto-Join DISABLED", Color3.fromRGB(255, 68, 68))
+		autoClickToggle.Text = "OFF"
+		autoClickToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		autoClickToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+		showNotification("🖱 Auto-Click OFF", Color3.fromRGB(255, 68, 68))
 	end
 end)
-
-spammerToggle.MouseButton1Click:Connect(function()
-	Settings.SpammerEnabled = not Settings.SpammerEnabled
-	
-	if Settings.SpammerEnabled then
-		spammerToggle.Text = "ON"
-		spammerToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-		spammerToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-		showNotification("🔄 Spammer ENABLED", Color3.fromRGB(0, 255, 136))
-		startSpammer()
-	else
-		spammerToggle.Text = "OFF"
-		spammerToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		spammerToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		showNotification("⏹ Spammer DISABLED", Color3.fromRGB(255, 68, 68))
-		stopSpammer()
-	end
-end)
-
 
 keybindButton.MouseButton1Click:Connect(function()
 	keybindButton.Text = "Press any key..."
 	keybindButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
 	listeningForKeybind = true
-end)
-
-delayInput.FocusLost:Connect(function()
-	local value = tonumber(delayInput.Text)
-	if value and value > 0 then
-		Settings.SpammerDelay = value
-		showNotification("⏱ Delay set to " .. value .. "s", Color3.fromRGB(0, 217, 255))
-	else
-		delayInput.Text = tostring(Settings.SpammerDelay)
-	end
 end)
 
 -- Keybind listener
@@ -814,7 +675,7 @@ end)
 
 fetchJobs()
 
-print("✅ NEXA Job Monitor loaded successfully!")
-print("🌐 Connecting to desktop server at:", SERVER_URL)
+print("✅ NEXA Job Monitor loaded!")
+print("🔗 Auto-pasting to Chilli Hub enabled")
 print("🎮 Press", Settings.ToggleKeybind.Name, "to toggle UI")
 
