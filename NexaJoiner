@@ -1,681 +1,343 @@
--- NEXA ROBLOX JOB MONITOR - AUTO-PASTE TO CHILLI
--- No job ID input - automatically sends to Chilli Hub
+-- NEXA CHILLI AUTO-PASTE - STANDALONE TEST VERSION
+-- Works without desktop server - for testing Chilli integration
 
 local Players = game:GetService("Players")
-local TeleportService = game:GetService("TeleportService")
-local HttpService = game:GetService("HttpService")
 local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Configuration
-local SERVER_URL = "http://localhost:8080"
-local UPDATE_INTERVAL = 3
-local PLACE_ID = game.PlaceId
+print("🚀 NEXA Chilli Test Version Loading...")
+
+-- Test job data (simulates server data)
+local testJobs = {
+	{jobId = "test-job-12345", name = "High Paying Job", money = "$5000", players = "3"},
+	{jobId = "test-job-67890", name = "Fast Money Run", money = "$3500", players = "5"},
+}
+
+-- Current job index
+local currentJobIndex = 1
 
 -- Settings
 local Settings = {
 	ToggleKeybind = Enum.KeyCode.RightControl,
-	AutoPasteToChilli = true,  -- Auto-paste to Chilli
-	AutoClickChilli = true     -- Auto-click Chilli's join button
+	AutoClickChilli = true
 }
-
--- Hidden job ID storage (for passing to Chilli)
-local currentJobId = ""
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NexaJobMonitor"
+screenGui.Name = "NexaChilliTest"
 screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.IgnoreGuiInset = true
 screenGui.Parent = playerGui
 
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 420, 0, 550)  -- Shorter since no job ID box
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -275)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Visible = true
-mainFrame.Parent = screenGui
+-- Simple control panel
+local controlPanel = Instance.new("Frame")
+controlPanel.Size = UDim2.new(0, 350, 0, 250)
+controlPanel.Position = UDim2.new(0.5, -175, 0.5, -125)
+controlPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+controlPanel.BorderSizePixel = 2
+controlPanel.BorderColor3 = Color3.fromRGB(0, 255, 136)
+controlPanel.Active = true
+controlPanel.Draggable = true
+controlPanel.Parent = screenGui
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = mainFrame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = controlPanel
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(0, 217, 255)
-mainStroke.Thickness = 2
-mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-mainStroke.Parent = mainFrame
-
--- Header
-local header = Instance.new("Frame")
-header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 70)
-header.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-header.BorderSizePixel = 0
-header.Parent = mainFrame
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 12)
-headerCorner.Parent = header
-
-local headerFix = Instance.new("Frame")
-headerFix.Size = UDim2.new(1, 0, 0, 12)
-headerFix.Position = UDim2.new(0, 0, 1, -12)
-headerFix.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-headerFix.BorderSizePixel = 0
-headerFix.Parent = header
-
+-- Title
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(0.5, 0, 1, 0)
-title.Position = UDim2.new(0, 20, 0, 0)
-title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
 title.Font = Enum.Font.GothamBold
-title.Text = "NEXA"
-title.TextColor3 = Color3.fromRGB(15, 20, 25)
-title.TextSize = 28
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
+title.Text = "🔗 NEXA → CHILLI TEST"
+title.TextColor3 = Color3.fromRGB(20, 20, 25)
+title.TextSize = 16
+title.Parent = controlPanel
 
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(0.5, 0, 0, 20)
-subtitle.Position = UDim2.new(0, 20, 1, -25)
-subtitle.BackgroundTransparency = 1
-subtitle.Font = Enum.Font.Gotham
-subtitle.Text = "Job Monitor → Chilli"
-subtitle.TextColor3 = Color3.fromRGB(15, 20, 25)
-subtitle.TextSize = 12
-subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Parent = header
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = title
 
-local statusIndicator = Instance.new("TextLabel")
-statusIndicator.Name = "StatusIndicator"
-statusIndicator.Size = UDim2.new(0, 110, 0, 32)
-statusIndicator.Position = UDim2.new(1, -120, 0.5, -16)
-statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-statusIndicator.Font = Enum.Font.GothamBold
-statusIndicator.Text = "OFFLINE"
-statusIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusIndicator.TextSize = 13
-statusIndicator.Parent = header
+local titleFix = Instance.new("Frame")
+titleFix.Size = UDim2.new(1, 0, 0, 10)
+titleFix.Position = UDim2.new(0, 0, 1, -10)
+titleFix.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+titleFix.BorderSizePixel = 0
+titleFix.Parent = title
 
-local statusCorner = Instance.new("UICorner")
-statusCorner.CornerRadius = UDim.new(0, 8)
-statusCorner.Parent = statusIndicator
+-- Status label
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -20, 0, 60)
+statusLabel.Position = UDim2.new(0, 10, 0, 50)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.Text = "Ready to test\nClick button to send job to Chilli"
+statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+statusLabel.TextSize = 12
+statusLabel.TextWrapped = true
+statusLabel.TextYAlignment = Enum.TextYAlignment.Top
+statusLabel.Parent = controlPanel
 
+-- Send Test Job Button
+local sendButton = Instance.new("TextButton")
+sendButton.Size = UDim2.new(0, 320, 0, 50)
+sendButton.Position = UDim2.new(0, 15, 0, 120)
+sendButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+sendButton.Font = Enum.Font.GothamBold
+sendButton.Text = "📤 SEND TEST JOB TO CHILLI"
+sendButton.TextColor3 = Color3.fromRGB(20, 20, 25)
+sendButton.TextSize = 14
+sendButton.Parent = controlPanel
+
+local sendCorner = Instance.new("UICorner")
+sendCorner.CornerRadius = UDim.new(0, 8)
+sendCorner.Parent = sendButton
+
+-- Find Chilli Button
+local findButton = Instance.new("TextButton")
+findButton.Size = UDim2.new(0, 320, 0, 40)
+findButton.Position = UDim2.new(0, 15, 0, 180)
+findButton.BackgroundColor3 = Color3.fromRGB(30, 111, 235)
+findButton.Font = Enum.Font.GothamBold
+findButton.Text = "🔍 FIND CHILLI ELEMENTS"
+findButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+findButton.TextSize = 12
+findButton.Parent = controlPanel
+
+local findCorner = Instance.new("UICorner")
+findCorner.CornerRadius = UDim.new(0, 8)
+findCorner.Parent = findButton
+
+-- Close Button
 local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 35, 0, 35)
-closeButton.Position = UDim2.new(1, -45, 0, 17.5)
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 5)
 closeButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 closeButton.Font = Enum.Font.GothamBold
 closeButton.Text = "X"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 18
-closeButton.Parent = mainFrame
+closeButton.TextSize = 16
+closeButton.Parent = controlPanel
 
 local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = closeButton
 
--- Settings Button
-local settingsButton = Instance.new("TextButton")
-settingsButton.Size = UDim2.new(0, 35, 0, 35)
-settingsButton.Position = UDim2.new(1, -90, 0, 17.5)
-settingsButton.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-settingsButton.Font = Enum.Font.GothamBold
-settingsButton.Text = "⚙"
-settingsButton.TextColor3 = Color3.fromRGB(0, 217, 255)
-settingsButton.TextSize = 18
-settingsButton.Parent = mainFrame
-
-local settingsCorner = Instance.new("UICorner")
-settingsCorner.CornerRadius = UDim.new(0, 8)
-settingsCorner.Parent = settingsButton
-
--- Status Info Panel (shows current job ID being sent)
-local infoPanel = Instance.new("Frame")
-infoPanel.Size = UDim2.new(1, -30, 0, 60)
-infoPanel.Position = UDim2.new(0, 15, 0, 85)
-infoPanel.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-infoPanel.BorderSizePixel = 0
-infoPanel.Parent = mainFrame
-
-local infoPanelCorner = Instance.new("UICorner")
-infoPanelCorner.CornerRadius = UDim.new(0, 10)
-infoPanelCorner.Parent = infoPanel
-
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Size = UDim2.new(1, -20, 0, 20)
-infoLabel.Position = UDim2.new(0, 10, 0, 8)
-infoLabel.BackgroundTransparency = 1
-infoLabel.Font = Enum.Font.GothamBold
-infoLabel.Text = "🔗 AUTO-PASTE TO CHILLI"
-infoLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
-infoLabel.TextSize = 13
-infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-infoLabel.Parent = infoPanel
-
-local currentJobLabel = Instance.new("TextLabel")
-currentJobLabel.Name = "CurrentJobLabel"
-currentJobLabel.Size = UDim2.new(1, -20, 0, 24)
-currentJobLabel.Position = UDim2.new(0, 10, 0, 30)
-currentJobLabel.BackgroundTransparency = 1
-currentJobLabel.Font = Enum.Font.Gotham
-currentJobLabel.Text = "Waiting for new job..."
-currentJobLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-currentJobLabel.TextSize = 11
-currentJobLabel.TextXAlignment = Enum.TextXAlignment.Left
-currentJobLabel.TextWrapped = true
-currentJobLabel.Parent = infoPanel
-
--- Jobs List
-local jobsLabel = Instance.new("TextLabel")
-jobsLabel.Size = UDim2.new(1, -30, 0, 28)
-jobsLabel.Position = UDim2.new(0, 15, 0, 155)
-jobsLabel.BackgroundTransparency = 1
-jobsLabel.Font = Enum.Font.GothamBold
-jobsLabel.Text = "📋 RECENT JOBS (Auto-sent to Chilli)"
-jobsLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
-jobsLabel.TextSize = 14
-jobsLabel.TextXAlignment = Enum.TextXAlignment.Left
-jobsLabel.Parent = mainFrame
-
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, -30, 1, -200)
-scrollFrame.Position = UDim2.new(0, 15, 0, 188)
-scrollFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 8
-scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 217, 255)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.Parent = mainFrame
-
-local scrollCorner = Instance.new("UICorner")
-scrollCorner.CornerRadius = UDim.new(0, 10)
-scrollCorner.Parent = scrollFrame
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Padding = UDim.new(0, 10)
-listLayout.Parent = scrollFrame
-
-local listPadding = Instance.new("UIPadding")
-listPadding.PaddingTop = UDim.new(0, 8)
-listPadding.PaddingBottom = UDim.new(0, 8)
-listPadding.PaddingLeft = UDim.new(0, 8)
-listPadding.PaddingRight = UDim.new(0, 8)
-listPadding.Parent = scrollFrame
-
--- Settings Panel
-local settingsPanel = Instance.new("Frame")
-settingsPanel.Name = "SettingsPanel"
-settingsPanel.Size = UDim2.new(0, 350, 0, 220)
-settingsPanel.Position = UDim2.new(0.5, -175, 0.5, -110)
-settingsPanel.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-settingsPanel.BorderSizePixel = 0
-settingsPanel.Visible = false
-settingsPanel.Parent = screenGui
-
-local settingsPanelCorner = Instance.new("UICorner")
-settingsPanelCorner.CornerRadius = UDim.new(0, 12)
-settingsPanelCorner.Parent = settingsPanel
-
-local settingsPanelStroke = Instance.new("UIStroke")
-settingsPanelStroke.Color = Color3.fromRGB(0, 217, 255)
-settingsPanelStroke.Thickness = 2
-settingsPanelStroke.Parent = settingsPanel
-
--- Settings Header
-local settingsHeader = Instance.new("Frame")
-settingsHeader.Size = UDim2.new(1, 0, 0, 50)
-settingsHeader.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-settingsHeader.BorderSizePixel = 0
-settingsHeader.Parent = settingsPanel
-
-local settingsHeaderCorner = Instance.new("UICorner")
-settingsHeaderCorner.CornerRadius = UDim.new(0, 12)
-settingsHeaderCorner.Parent = settingsHeader
-
-local settingsHeaderFix = Instance.new("Frame")
-settingsHeaderFix.Size = UDim2.new(1, 0, 0, 12)
-settingsHeaderFix.Position = UDim2.new(0, 0, 1, -12)
-settingsHeaderFix.BackgroundColor3 = Color3.fromRGB(0, 217, 255)
-settingsHeaderFix.BorderSizePixel = 0
-settingsHeaderFix.Parent = settingsHeader
-
-local settingsTitle = Instance.new("TextLabel")
-settingsTitle.Size = UDim2.new(1, -50, 1, 0)
-settingsTitle.Position = UDim2.new(0, 15, 0, 0)
-settingsTitle.BackgroundTransparency = 1
-settingsTitle.Font = Enum.Font.GothamBold
-settingsTitle.Text = "⚙ SETTINGS"
-settingsTitle.TextColor3 = Color3.fromRGB(15, 20, 25)
-settingsTitle.TextSize = 20
-settingsTitle.TextXAlignment = Enum.TextXAlignment.Left
-settingsTitle.Parent = settingsHeader
-
-local settingsCloseButton = Instance.new("TextButton")
-settingsCloseButton.Size = UDim2.new(0, 30, 0, 30)
-settingsCloseButton.Position = UDim2.new(1, -40, 0, 10)
-settingsCloseButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-settingsCloseButton.Font = Enum.Font.GothamBold
-settingsCloseButton.Text = "X"
-settingsCloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-settingsCloseButton.TextSize = 16
-settingsCloseButton.Parent = settingsPanel
-
-local settingsCloseCorner = Instance.new("UICorner")
-settingsCloseCorner.CornerRadius = UDim.new(0, 6)
-settingsCloseCorner.Parent = settingsCloseButton
-
--- Keybind Setting
-local keybindFrame = Instance.new("Frame")
-keybindFrame.Size = UDim2.new(1, -30, 0, 70)
-keybindFrame.Position = UDim2.new(0, 15, 0, 65)
-keybindFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-keybindFrame.BorderSizePixel = 0
-keybindFrame.Parent = settingsPanel
-
-local keybindCorner = Instance.new("UICorner")
-keybindCorner.CornerRadius = UDim.new(0, 8)
-keybindCorner.Parent = keybindFrame
-
-local keybindLabel = Instance.new("TextLabel")
-keybindLabel.Size = UDim2.new(1, -20, 0, 25)
-keybindLabel.Position = UDim2.new(0, 10, 0, 8)
-keybindLabel.BackgroundTransparency = 1
-keybindLabel.Font = Enum.Font.GothamBold
-keybindLabel.Text = "🎮 Toggle UI Keybind"
-keybindLabel.TextColor3 = Color3.fromRGB(0, 217, 255)
-keybindLabel.TextSize = 13
-keybindLabel.TextXAlignment = Enum.TextXAlignment.Left
-keybindLabel.Parent = keybindFrame
-
-local keybindButton = Instance.new("TextButton")
-keybindButton.Size = UDim2.new(1, -20, 0, 30)
-keybindButton.Position = UDim2.new(0, 10, 0, 32)
-keybindButton.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-keybindButton.Font = Enum.Font.Gotham
-keybindButton.Text = "RightControl"
-keybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-keybindButton.TextSize = 12
-keybindButton.Parent = keybindFrame
-
-local keybindButtonCorner = Instance.new("UICorner")
-keybindButtonCorner.CornerRadius = UDim.new(0, 6)
-keybindButtonCorner.Parent = keybindButton
-
--- Auto-Click Chilli Toggle
-local autoClickFrame = Instance.new("Frame")
-autoClickFrame.Size = UDim2.new(1, -30, 0, 50)
-autoClickFrame.Position = UDim2.new(0, 15, 0, 145)
-autoClickFrame.BackgroundColor3 = Color3.fromRGB(26, 31, 38)
-autoClickFrame.BorderSizePixel = 0
-autoClickFrame.Parent = settingsPanel
-
-local autoClickCorner = Instance.new("UICorner")
-autoClickCorner.CornerRadius = UDim.new(0, 8)
-autoClickCorner.Parent = autoClickFrame
-
-local autoClickLabel = Instance.new("TextLabel")
-autoClickLabel.Size = UDim2.new(0.7, 0, 1, 0)
-autoClickLabel.Position = UDim2.new(0, 10, 0, 0)
-autoClickLabel.BackgroundTransparency = 1
-autoClickLabel.Font = Enum.Font.GothamBold
-autoClickLabel.Text = "🖱 Auto-Click Chilli Join"
-autoClickLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-autoClickLabel.TextSize = 13
-autoClickLabel.TextXAlignment = Enum.TextXAlignment.Left
-autoClickLabel.Parent = autoClickFrame
-
-local autoClickToggle = Instance.new("TextButton")
-autoClickToggle.Size = UDim2.new(0, 70, 0, 30)
-autoClickToggle.Position = UDim2.new(1, -80, 0.5, -15)
-autoClickToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-autoClickToggle.Font = Enum.Font.GothamBold
-autoClickToggle.Text = "ON"
-autoClickToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-autoClickToggle.TextSize = 12
-autoClickToggle.Parent = autoClickFrame
-
-local autoClickToggleCorner = Instance.new("UICorner")
-autoClickToggleCorner.CornerRadius = UDim.new(0, 8)
-autoClickToggleCorner.Parent = autoClickToggle
-
--- Variables
-local isConnected = false
-local lastJobId = nil
-local connectionAttempts = 0
-local listeningForKeybind = false
-
--- Notification system
-local function showNotification(text, color)
-	local notif = Instance.new("TextLabel")
-	notif.Size = UDim2.new(0, 300, 0, 50)
-	notif.Position = UDim2.new(0.5, -150, 0, 20)
-	notif.BackgroundColor3 = color
-	notif.Font = Enum.Font.GothamBold
-	notif.Text = text
-	notif.TextColor3 = Color3.fromRGB(255, 255, 255)
-	notif.TextSize = 14
-	notif.Parent = screenGui
+-- FUNCTION TO FIND CHILLI HUB
+local function findChilliGui()
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("🔍 SEARCHING FOR CHILLI HUB...")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	
-	local notifCorner = Instance.new("UICorner")
-	notifCorner.CornerRadius = UDim.new(0, 10)
-	notifCorner.Parent = notif
+	local possibleNames = {"ChilliHub", "Chilli Hub", "Chilli", "ChilliGUI", "ScreenGui"}
 	
-	task.wait(2)
-	notif:Destroy()
-end
-
-local function updateConnectionStatus(connected)
-	isConnected = connected
-	if connected then
-		statusIndicator.Text = "✓ ONLINE"
-		statusIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-		connectionAttempts = 0
-	else
-		statusIndicator.Text = "✗ OFFLINE"
-		statusIndicator.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+	for _, name in pairs(possibleNames) do
+		local gui = playerGui:FindFirstChild(name)
+		if gui then
+			-- Verify it's Chilli
+			for _, obj in pairs(gui:GetDescendants()) do
+				if obj:IsA("TextLabel") and obj.Text and obj.Text:lower():find("chilli") then
+					print("✅ Found Chilli GUI:", name)
+					return gui
+				end
+			end
+		end
 	end
+	
+	print("❌ Chilli Hub GUI not found!")
+	print("💡 Make sure Chilli Hub is loaded")
+	return nil
 end
 
--- FUNCTION TO PASTE INTO CHILLI HUB
+-- FUNCTION TO FIND JOB ID INPUT
+local function findChilliJobInput()
+	local chilliGui = findChilliGui()
+	if not chilliGui then return nil end
+	
+	print("🔍 Searching for Job ID input...")
+	
+	-- Look for Servers section first
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("Frame") and obj.Name:lower():find("server") then
+			print("✅ Found Servers section")
+			
+			-- Look for textbox inside
+			for _, child in pairs(obj:GetDescendants()) do
+				if child:IsA("TextBox") then
+					local name = child.Name:lower()
+					local placeholder = child.PlaceholderText and child.PlaceholderText:lower() or ""
+					
+					if name:find("job") or name:find("id") or placeholder:find("job") or placeholder:find("id") then
+						print("✅ Found Job ID Input:", child:GetFullName())
+						print("   Name:", child.Name)
+						print("   Placeholder:", child.PlaceholderText)
+						return child
+					end
+				end
+			end
+		end
+	end
+	
+	-- Fallback: Search all textboxes
+	print("⚠️ Searching all textboxes...")
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextBox") then
+			print("📦 Found TextBox:", obj:GetFullName())
+			print("   Name:", obj.Name)
+			print("   Placeholder:", obj.PlaceholderText or "none")
+		end
+	end
+	
+	print("❌ Job ID input not found")
+	return nil
+end
+
+-- FUNCTION TO FIND JOIN BUTTON
+local function findChilliJoinButton()
+	local chilliGui = findChilliGui()
+	if not chilliGui then return nil end
+	
+	print("🔍 Searching for Join button...")
+	
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextButton") or obj:IsA("ImageButton") then
+			local text = obj.Text and obj.Text:lower() or ""
+			local name = obj.Name:lower()
+			
+			if text:find("join") or text:find("enter") or text:find("teleport") or name:find("join") then
+				print("✅ Found Join Button:", obj:GetFullName())
+				print("   Text:", obj.Text)
+				return obj
+			end
+		end
+	end
+	
+	print("❌ Join button not found")
+	return nil
+end
+
+-- FUNCTION TO PASTE INTO CHILLI
 local function pasteToChilli(jobId, jobName)
-	if not jobId or jobId == "" then return false end
+	print("")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("📤 SENDING TO CHILLI...")
+	print("Job:", jobName)
+	print("ID:", jobId)
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	
-	pcall(function()
-		-- Find Chilli Hub
-		local chilliGui = nil
-		for _, gui in pairs(playerGui:GetChildren()) do
-			if gui.Name:lower():find("chilli") or gui:FindFirstChild("ChilliHub") then
-				chilliGui = gui
-				break
-			end
-		end
+	local input = findChilliJobInput()
+	
+	if input then
+		-- Paste the job ID
+		input.Text = jobId
+		print("✅ Pasted Job ID:", jobId)
 		
-		if not chilliGui then
-			print("⚠ Chilli Hub not found")
-			return false
-		end
+		statusLabel.Text = "✅ SUCCESS!\nPasted: " .. jobName .. "\nID: " .. jobId
+		statusLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
 		
-		-- Find Job ID input in Servers section
-		for _, obj in pairs(chilliGui:GetDescendants()) do
-			if obj:IsA("TextBox") then
-				local name = obj.Name:lower()
-				local placeholder = obj.PlaceholderText and obj.PlaceholderText:lower() or ""
-				
-				if name:find("job") or placeholder:find("job") or placeholder:find("id") then
-					-- Found it! Paste the job ID
-					obj.Text = jobId
-					print("✅ Pasted to Chilli:", jobId)
-					
-					-- Update UI
-					currentJobLabel.Text = "📤 Sent: " .. jobName .. "\n🔑 " .. jobId
-					currentJobLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
-					
-					-- Auto-click join button if enabled
-					if Settings.AutoClickChilli then
-						task.wait(0.3)
-						
-						-- Find and click join button
-						for _, btn in pairs(chilliGui:GetDescendants()) do
-							if btn:IsA("TextButton") then
-								local btnText = btn.Text:lower()
-								if btnText:find("join") or btnText:find("enter") or btnText:find("teleport") then
-									pcall(function()
-										-- Try to click it
-										for _, connection in pairs(getconnections(btn.MouseButton1Click)) do
-											connection:Fire()
-										end
-										btn.MouseButton1Click:Fire()
-									end)
-									print("✅ Clicked Chilli join button")
-									break
-								end
-							end
-						end
-					end
-					
-					return true
-				end
-			end
-		end
-		
-		print("❌ Chilli Job ID input not found - make sure you're on Servers tab")
-		return false
-	end)
-end
-
-local function createJobCard(jobData)
-	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, -16, 0, 75)
-	card.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-	card.BorderSizePixel = 0
-	
-	local cardCorner = Instance.new("UICorner")
-	cardCorner.CornerRadius = UDim.new(0, 8)
-	cardCorner.Parent = card
-	
-	local cardStroke = Instance.new("UIStroke")
-	cardStroke.Color = Color3.fromRGB(0, 217, 255)
-	cardStroke.Thickness = 1
-	cardStroke.Transparency = 0.7
-	cardStroke.Parent = card
-	
-	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -16, 0, 22)
-	nameLabel.Position = UDim2.new(0, 8, 0, 6)
-	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.Text = jobData.name or "Unknown Job"
-	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLabel.TextSize = 13
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-	nameLabel.Parent = card
-	
-	local moneyLabel = Instance.new("TextLabel")
-	moneyLabel.Size = UDim2.new(0.5, -10, 0, 20)
-	moneyLabel.Position = UDim2.new(0, 8, 0, 30)
-	moneyLabel.BackgroundTransparency = 1
-	moneyLabel.Font = Enum.Font.Gotham
-	moneyLabel.Text = "💰 " .. (jobData.money or "$0")
-	moneyLabel.TextColor3 = Color3.fromRGB(0, 255, 136)
-	moneyLabel.TextSize = 12
-	moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-	moneyLabel.Parent = card
-	
-	local playersLabel = Instance.new("TextLabel")
-	playersLabel.Size = UDim2.new(0.5, -10, 0, 20)
-	playersLabel.Position = UDim2.new(0.5, 0, 0, 30)
-	playersLabel.BackgroundTransparency = 1
-	playersLabel.Font = Enum.Font.Gotham
-	playersLabel.Text = "👥 " .. (jobData.players or "0") .. "/8"
-	playersLabel.TextColor3 = Color3.fromRGB(255, 211, 61)
-	playersLabel.TextSize = 12
-	playersLabel.TextXAlignment = Enum.TextXAlignment.Left
-	playersLabel.Parent = card
-	
-	local idLabel = Instance.new("TextLabel")
-	idLabel.Size = UDim2.new(1, -16, 0, 16)
-	idLabel.Position = UDim2.new(0, 8, 1, -20)
-	idLabel.BackgroundTransparency = 1
-	idLabel.Font = Enum.Font.Gotham
-	idLabel.Text = "ID: " .. (jobData.jobId or "N/A")
-	idLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-	idLabel.TextSize = 10
-	idLabel.TextXAlignment = Enum.TextXAlignment.Left
-	idLabel.Parent = card
-	
-	-- Add sent indicator
-	local sentIcon = Instance.new("TextLabel")
-	sentIcon.Size = UDim2.new(0, 50, 0, 20)
-	sentIcon.Position = UDim2.new(1, -58, 0, 6)
-	sentIcon.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-	sentIcon.Font = Enum.Font.GothamBold
-	sentIcon.Text = "SENT ✓"
-	sentIcon.TextColor3 = Color3.fromRGB(15, 20, 25)
-	sentIcon.TextSize = 9
-	sentIcon.Parent = card
-	
-	local sentCorner = Instance.new("UICorner")
-	sentCorner.CornerRadius = UDim.new(0, 4)
-	sentCorner.Parent = sentIcon
-	
-	return card
-end
-
-local function updateJobsList(jobs)
-	for _, child in ipairs(scrollFrame:GetChildren()) do
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
-	
-	for i, job in ipairs(jobs) do
-		local card = createJobCard(job)
-		card.LayoutOrder = i
-		card.Parent = scrollFrame
-	end
-	
-	task.wait(0.1)
-	scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
-end
-
--- FETCH JOBS FUNCTION
-local function fetchJobs()
-	local success, result = pcall(function()
-		return game:HttpGet(SERVER_URL .. "/jobs", true)
-	end)
-	
-	if success and result then
-		local decodeSuccess, data = pcall(function()
-			return HttpService:JSONDecode(result)
-		end)
-		
-		if decodeSuccess and data then
-			updateConnectionStatus(data.connected or false)
+		-- Try to click join button
+		if Settings.AutoClickChilli then
+			task.wait(0.3)
+			local button = findChilliJoinButton()
 			
-			if data.jobs and #data.jobs > 0 then
-				updateJobsList(data.jobs)
-				
-				local latestJob = data.jobs[1]
-				if latestJob and latestJob.jobId and latestJob.jobId ~= lastJobId then
-					lastJobId = latestJob.jobId
-					currentJobId = latestJob.jobId
-					
-					print("")
-					print("🔥 NEW JOB DETECTED:", latestJob.name)
-					print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-					
-					task.spawn(function()
-						showNotification("🔥 New Job: " .. latestJob.name, Color3.fromRGB(0, 217, 255))
-					end)
-					
-					-- Auto-paste to Chilli
-					if Settings.AutoPasteToChilli then
-						task.wait(0.5)
-						local success = pasteToChilli(latestJob.jobId, latestJob.name)
-						
-						if success then
-							print("✅ Successfully sent to Chilli Hub!")
-							print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-							showNotification("✅ Sent to Chilli!", Color3.fromRGB(0, 255, 136))
-						else
-							print("❌ Failed to send to Chilli")
-							print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-						end
+			if button then
+				pcall(function()
+					-- Try multiple click methods
+					for _, connection in pairs(getconnections(button.MouseButton1Click)) do
+						connection:Fire()
 					end
-				end
+					button.MouseButton1Click:Fire()
+				end)
+				print("✅ Clicked join button")
+				print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+			else
+				print("⚠️ Join button not found")
+				print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 			end
-			
-			connectionAttempts = 0
-		else
-			warn("Failed to decode JSON response")
-			updateConnectionStatus(false)
 		end
+		
+		return true
 	else
-		connectionAttempts = connectionAttempts + 1
-		updateConnectionStatus(false)
-		
-		if connectionAttempts == 1 then
-			warn("NEXA: Cannot connect to desktop server")
-			warn("Make sure nexa_monitor_server.py is running!")
-		end
+		statusLabel.Text = "❌ FAILED\nChilli Hub not found or\nJob ID input not visible"
+		statusLabel.TextColor3 = Color3.fromRGB(255, 68, 68)
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		return false
 	end
 end
 
 -- Event Handlers
-closeButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = false
-end)
-
-settingsButton.MouseButton1Click:Connect(function()
-	settingsPanel.Visible = not settingsPanel.Visible
-end)
-
-settingsCloseButton.MouseButton1Click:Connect(function()
-	settingsPanel.Visible = false
-end)
-
-autoClickToggle.MouseButton1Click:Connect(function()
-	Settings.AutoClickChilli = not Settings.AutoClickChilli
+sendButton.MouseButton1Click:Connect(function()
+	local job = testJobs[currentJobIndex]
 	
-	if Settings.AutoClickChilli then
-		autoClickToggle.Text = "ON"
-		autoClickToggle.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-		autoClickToggle.TextColor3 = Color3.fromRGB(15, 20, 25)
-		showNotification("🖱 Auto-Click ON", Color3.fromRGB(0, 255, 136))
+	sendButton.Text = "⏳ SENDING..."
+	sendButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
+	
+	task.wait(0.5)
+	
+	local success = pasteToChilli(job.jobId, job.name)
+	
+	if success then
+		sendButton.Text = "✅ SENT!"
+		sendButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+		
+		-- Cycle to next job
+		currentJobIndex = currentJobIndex + 1
+		if currentJobIndex > #testJobs then
+			currentJobIndex = 1
+		end
+		
+		task.wait(1.5)
+		sendButton.Text = "📤 SEND NEXT TEST JOB"
+		sendButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
 	else
-		autoClickToggle.Text = "OFF"
-		autoClickToggle.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
-		autoClickToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		showNotification("🖱 Auto-Click OFF", Color3.fromRGB(255, 68, 68))
+		sendButton.Text = "❌ FAILED - TRY AGAIN"
+		sendButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
+		
+		task.wait(2)
+		sendButton.Text = "📤 SEND TEST JOB TO CHILLI"
+		sendButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
 	end
 end)
 
-keybindButton.MouseButton1Click:Connect(function()
-	keybindButton.Text = "Press any key..."
-	keybindButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
-	listeningForKeybind = true
+findButton.MouseButton1Click:Connect(function()
+	findButton.Text = "🔍 SEARCHING..."
+	
+	task.wait(0.3)
+	
+	print("\n\n")
+	findChilliGui()
+	findChilliJobInput()
+	findChilliJoinButton()
+	print("\n\n")
+	
+	findButton.Text = "✅ CHECK CONSOLE (F9)"
+	task.wait(2)
+	findButton.Text = "🔍 FIND CHILLI ELEMENTS"
 end)
 
--- Keybind listener
+closeButton.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+-- Keybind to toggle
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 	
-	if listeningForKeybind then
-		Settings.ToggleKeybind = input.KeyCode
-		keybindButton.Text = input.KeyCode.Name
-		keybindButton.BackgroundColor3 = Color3.fromRGB(15, 20, 25)
-		listeningForKeybind = false
-		showNotification("🎮 Keybind set to " .. input.KeyCode.Name, Color3.fromRGB(0, 217, 255))
-	elseif input.KeyCode == Settings.ToggleKeybind then
-		mainFrame.Visible = not mainFrame.Visible
+	if input.KeyCode == Settings.ToggleKeybind then
+		controlPanel.Visible = not controlPanel.Visible
 	end
 end)
 
--- Main Update Loop
-task.spawn(function()
-	showNotification("🚀 NEXA Monitor Starting...", Color3.fromRGB(0, 217, 255))
-	task.wait(1)
-	
-	while screenGui and screenGui.Parent do
-		fetchJobs()
-		task.wait(UPDATE_INTERVAL)
-	end
-end)
-
-fetchJobs()
-
-print("✅ NEXA Job Monitor loaded!")
-print("🔗 Auto-pasting to Chilli Hub enabled")
-print("🎮 Press", Settings.ToggleKeybind.Name, "to toggle UI")
-
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("✅ NEXA CHILLI TEST LOADED!")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("💡 INSTRUCTIONS:")
+print("1. Load Chilli Hub")
+print("2. Open Chilli's Servers tab")
+print("3. Click 'SEND TEST JOB TO CHILLI'")
+print("4. Check if it pastes the job ID")
+print("")
+print("🔍 Click 'FIND CHILLI ELEMENTS' to debug")
+print("📋 Press F9 to see console output")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
