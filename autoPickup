@@ -13,6 +13,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
+-- Game modules
+local Packages = ReplicatedStorage:WaitForChild("Packages")
+local Datas = ReplicatedStorage:WaitForChild("Datas")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Utils = ReplicatedStorage:WaitForChild("Utils")
+
+local Synchronizer = require(Packages:WaitForChild("Synchronizer"))
+local AnimalsData = require(Datas:WaitForChild("Animals"))
+local RaritiesData = require(Datas:WaitForChild("Rarities"))
+local AnimalsShared = require(Shared:WaitForChild("Animals"))
+local NumberUtils = require(Utils:WaitForChild("NumberUtils"))
+
 -- Config
 local Config = {
     AutoStealEnabled = false,
@@ -184,10 +196,30 @@ local function CreateButton(name, color, callback)
 end
 
 -- ============================================================
--- DESYNC SYSTEM (Stolen from BK's Hub)
+-- DESYNC SYSTEM (Stolen from BK's Hub) - TOGGLEABLE
 -- ============================================================
 
+local DesyncIndicator = nil
+local OriginalFlags = {}
+
 local function EnableDesync()
+    if Config.DesyncEnabled then return end
+    
+    Config.DesyncEnabled = true
+    
+    -- Store original flags
+    for key, value in pairs(DESYNC_FLAGS) do
+        pcall(function()
+            local success, original = pcall(function()
+                return getfflag(tostring(key))
+            end)
+            if success then
+                OriginalFlags[key] = original
+            end
+        end)
+    end
+    
+    -- Apply desync flags
     for key, value in pairs(DESYNC_FLAGS) do
         pcall(function()
             setfflag(tostring(key), tostring(value))
@@ -195,14 +227,19 @@ local function EnableDesync()
     end
     
     -- Create indicator
-    local Indicator = Instance.new("Frame")
-    Indicator.Size = UDim2.new(0, 200, 0, 50)
-    Indicator.Position = UDim2.new(0.5, -100, 0, 100)
-    Indicator.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-    Indicator.BorderSizePixel = 0
-    Indicator.Parent = ScreenGui
+    DesyncIndicator = Instance.new("Frame")
+    DesyncIndicator.Size = UDim2.new(0, 200, 0, 50)
+    DesyncIndicator.Position = UDim2.new(0.5, -100, 0, 100)
+    DesyncIndicator.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    DesyncIndicator.BorderSizePixel = 0
+    DesyncIndicator.Parent = ScreenGui
     
-    Instance.new("UICorner", Indicator).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", DesyncIndicator).CornerRadius = UDim.new(0, 10)
+    
+    local IndicatorStroke = Instance.new("UIStroke")
+    IndicatorStroke.Color = Color3.fromRGB(138, 43, 226)
+    IndicatorStroke.Thickness = 2
+    IndicatorStroke.Parent = DesyncIndicator
     
     local IndicatorText = Instance.new("TextLabel")
     IndicatorText.Size = UDim2.new(1, 0, 1, 0)
@@ -211,7 +248,7 @@ local function EnableDesync()
     IndicatorText.TextColor3 = Color3.fromRGB(138, 43, 226)
     IndicatorText.TextSize = 14
     IndicatorText.Font = Enum.Font.GothamBold
-    IndicatorText.Parent = Indicator
+    IndicatorText.Parent = DesyncIndicator
     
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Desync Enabled";
@@ -220,13 +257,40 @@ local function EnableDesync()
     })
 end
 
+local function DisableDesync()
+    if not Config.DesyncEnabled then return end
+    
+    Config.DesyncEnabled = false
+    
+    -- Restore original flags
+    for key, original in pairs(OriginalFlags) do
+        pcall(function()
+            setfflag(tostring(key), tostring(original))
+        end)
+    end
+    
+    OriginalFlags = {}
+    
+    -- Remove indicator
+    if DesyncIndicator then
+        DesyncIndicator:Destroy()
+        DesyncIndicator = nil
+    end
+    
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Desync Disabled";
+        Text = "Flags restored";
+        Duration = 3;
+    })
+end
+
 -- ============================================================
--- AUTO STEAL SYSTEM (Stolen from BK's Hub) - FIXED
+-- AUTO STEAL SYSTEM (Stolen from BK's Hub) - FIXED WITH ANIMAL SCANNING
 -- ============================================================
 
 local PromptCache = {}
 local InternalStealCache = {}
-local LastTargetUID = nil
+local AllAnimalsCache = {}
 
 local function GetHRP()
     local char = LocalPlayer.Character
@@ -234,39 +298,165 @@ local function GetHRP()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
-local function FindAllProximityPrompts()
-    local prompts = {}
+local function IsMyBaseAnimal(animalData)
+    if not animalData or not animalData.plot then
+        return false
+    end
     
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") and obj.Enabled then
-            local parent = obj.Parent
-            if parent and parent:IsA("BasePart") then
-                table.insert(prompts, {prompt = obj, part = parent})
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then
+        return false
+    end
+    
+    local plot = plots:FindFirstChild(animalData.plot)
+    if not plot then
+        return false
+    end
+    
+    -- Use Synchronizer to check owner
+    local channel = Synchronizer:Get(plot.Name)
+    if channel then
+        local owner = channel:Get("Owner")
+        if owner then
+            if typeof(owner) == "Instance" and owner:IsA("Player") then
+                return owner.UserId == LocalPlayer.UserId
+            elseif typeof(owner) == "table" and owner.UserId then
+                return owner.UserId == LocalPlayer.UserId
+            elseif typeof(owner) == "Instance" then
+                return owner == LocalPlayer
             end
         end
     end
     
-    return prompts
+    return false
 end
 
-local function GetNearestPrompt()
+local function ScanAllAnimals()
+    AllAnimalsCache = {}
+    
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return end
+    
+    for _, plot in ipairs(plots:GetChildren()) do
+        local channel = Synchronizer:Get(plot.Name)
+        if not channel then continue end
+        
+        local animalList = channel:Get("AnimalList")
+        if not animalList then continue end
+        
+        local owner = channel:Get("Owner")
+        if not owner or not Players:FindFirstChild(owner.Name) then continue end
+        
+        for slot, animalData in pairs(animalList) do
+            if type(animalData) == "table" then
+                local animalName = animalData.Index
+                local animalInfo = AnimalsData[animalName]
+                if not animalInfo then continue end
+                
+                local mutation = animalData.Mutation or "None"
+                local traits = animalData.Traits or {}
+                
+                local genValue = AnimalsShared:GetGeneration(animalName, animalData.Mutation, animalData.Traits, nil)
+                
+                local data = {
+                    name = animalInfo.DisplayName or animalName,
+                    genValue = genValue,
+                    owner = owner.Name,
+                    plot = plot.Name,
+                    slot = tostring(slot),
+                    uid = plot.Name .. "_" .. tostring(slot),
+                }
+                
+                -- Don't add your own base animals
+                if not IsMyBaseAnimal(data) then
+                    table.insert(AllAnimalsCache, data)
+                end
+            end
+        end
+    end
+    
+    -- Sort by gen value (highest first)
+    table.sort(AllAnimalsCache, function(a, b)
+        return a.genValue > b.genValue
+    end)
+end
+
+local function GetAnimalPosition(animalData)
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    
+    local plot = plots:FindFirstChild(animalData.plot)
+    if not plot then return nil end
+    
+    local podiums = plot:FindFirstChild("AnimalPodiums")
+    if not podiums then return nil end
+    
+    local podium = podiums:FindFirstChild(animalData.slot)
+    if not podium then return nil end
+    
+    return podium:GetPivot().Position
+end
+
+local function GetNearestAnimal()
     local hrp = GetHRP()
     if not hrp then return nil end
     
-    local allPrompts = FindAllProximityPrompts()
     local nearest = nil
     local minDist = math.huge
     
-    for _, data in pairs(allPrompts) do
-        local dist = (data.part.Position - hrp.Position).Magnitude
-        
-        if dist <= data.prompt.MaxActivationDistance and dist < minDist then
-            minDist = dist
-            nearest = data.prompt
+    for _, animalData in ipairs(AllAnimalsCache) do
+        local pos = GetAnimalPosition(animalData)
+        if pos then
+            local dist = (hrp.Position - pos).Magnitude
+            
+            if dist < minDist then
+                minDist = dist
+                nearest = animalData
+            end
         end
     end
     
     return nearest
+end
+
+local function FindProximityPromptForAnimal(animalData)
+    if not animalData then return nil end
+    
+    -- Check cache
+    local cachedPrompt = PromptCache[animalData.uid]
+    if cachedPrompt and cachedPrompt.Parent then
+        return cachedPrompt
+    end
+    
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    
+    local plot = plots:FindFirstChild(animalData.plot)
+    if not plot then return nil end
+    
+    local podiums = plot:FindFirstChild("AnimalPodiums")
+    if not podiums then return nil end
+    
+    local podium = podiums:FindFirstChild(animalData.slot)
+    if not podium then return nil end
+    
+    local base = podium:FindFirstChild("Base")
+    if not base then return nil end
+    
+    local spawn = base:FindFirstChild("Spawn")
+    if not spawn then return nil end
+    
+    local attach = spawn:FindFirstChild("PromptAttachment")
+    if not attach then return nil end
+    
+    for _, p in ipairs(attach:GetChildren()) do
+        if p:IsA("ProximityPrompt") then
+            PromptCache[animalData.uid] = p
+            return p
+        end
+    end
+    
+    return nil
 end
 
 local function BuildStealCallbacks(prompt)
@@ -328,27 +518,50 @@ local function ExecuteSteal(prompt)
 end
 
 local AutoStealConnection = nil
+local LastScanTime = 0
 
 local function StartAutoSteal()
     if AutoStealConnection then return end
     
+    -- Initial scan
+    ScanAllAnimals()
+    
     AutoStealConnection = RunService.Heartbeat:Connect(function()
         if not Config.AutoStealEnabled then return end
         
-        local nearestPrompt = GetNearestPrompt()
+        -- Rescan every 5 seconds
+        local now = tick()
+        if now - LastScanTime >= 5 then
+            ScanAllAnimals()
+            LastScanTime = now
+        end
         
-        if nearestPrompt then
+        local targetAnimal = nil
+        
+        if Config.AutoStealNearest then
+            targetAnimal = GetNearestAnimal()
+        else
+            -- Get highest gen (first in sorted list)
+            targetAnimal = AllAnimalsCache[1]
+        end
+        
+        if not targetAnimal then return end
+        
+        -- Find proximity prompt
+        local prompt = FindProximityPromptForAnimal(targetAnimal)
+        
+        if prompt then
             -- Build callbacks if not cached
-            if not InternalStealCache[nearestPrompt] then
-                BuildStealCallbacks(nearestPrompt)
+            if not InternalStealCache[prompt] then
+                BuildStealCallbacks(prompt)
             end
             
             -- Execute steal
-            ExecuteSteal(nearestPrompt)
+            ExecuteSteal(prompt)
         end
     end)
     
-    print("Auto-Steal started!")
+    print("Auto-Steal started! Found " .. #AllAnimalsCache .. " animals")
 end
 
 local function StopAutoSteal()
@@ -607,12 +820,21 @@ AutoStealSection.Font = Enum.Font.GothamBold
 AutoStealSection.TextXAlignment = Enum.TextXAlignment.Left
 AutoStealSection.Parent = ScrollFrame
 
-CreateToggle("Auto-Steal Highest", function(enabled)
+CreateToggle("Auto-Steal Highest Gen", function(enabled)
     Config.AutoStealEnabled = enabled
     if enabled then
+        Config.AutoStealNearest = false
         StartAutoSteal()
     else
         StopAutoSteal()
+    end
+end)
+
+CreateToggle("Auto-Steal Nearest", function(enabled)
+    Config.AutoStealNearest = enabled
+    if enabled then
+        Config.AutoStealEnabled = true
+        StartAutoSteal()
     end
 end)
 
@@ -656,6 +878,14 @@ ProtectionSection.Font = Enum.Font.GothamBold
 ProtectionSection.TextXAlignment = Enum.TextXAlignment.Left
 ProtectionSection.Parent = ScrollFrame
 
+CreateToggle("Desync V3", function(enabled)
+    if enabled then
+        EnableDesync()
+    else
+        DisableDesync()
+    end
+end)
+
 CreateToggle("Anti-Ragdoll", function(enabled)
     Config.AntiRagdollEnabled = enabled
     if enabled then
@@ -675,10 +905,6 @@ ActionsSection.TextSize = 16
 ActionsSection.Font = Enum.Font.GothamBold
 ActionsSection.TextXAlignment = Enum.TextXAlignment.Left
 ActionsSection.Parent = ScrollFrame
-
-CreateButton("⚡ Enable Desync V3", Color3.fromRGB(138, 43, 226), function()
-    EnableDesync()
-end)
 
 CreateButton("🔄 Rejoin Server", Color3.fromRGB(0, 150, 255), function()
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
@@ -701,3 +927,4 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
 })
 
 print("🧠 Modern Brainrot Hub loaded!")
+
