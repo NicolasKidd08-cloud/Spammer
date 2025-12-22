@@ -1,15 +1,17 @@
 local player = game.Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NexaAutoCollectGui"
+screenGui.Name = "NexaAutoPickupGui"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
 -- Create Main Frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 280, 0, 150)
+frame.Size = UDim2.new(0, 280, 0, 100)
 frame.Position = UDim2.new(0.5, -140, 0, 30)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 frame.BorderSizePixel = 0
@@ -39,187 +41,138 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 5)
 title.BackgroundTransparency = 1
-title.Text = "NEXA AUTO COLLECT"
+title.Text = "NEXA AUTO PICKUP"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 16
 title.Parent = frame
 
--- Create Auto Collect Toggle Button
-local collectButton = Instance.new("TextButton")
-collectButton.Size = UDim2.new(0, 250, 0, 45)
-collectButton.Position = UDim2.new(0.5, -125, 0, 40)
-collectButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-collectButton.Text = "AUTO COLLECT CASH: OFF"
-collectButton.TextColor3 = Color3.fromRGB(0, 100, 0)
-collectButton.Font = Enum.Font.GothamBold
-collectButton.TextSize = 13
-collectButton.BorderSizePixel = 0
-collectButton.Parent = frame
+-- Create Toggle Button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 250, 0, 50)
+button.Position = UDim2.new(0.5, -125, 0, 40)
+button.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+button.Text = "AUTO PICKUP: OFF"
+button.TextColor3 = Color3.fromRGB(0, 100, 0)
+button.Font = Enum.Font.GothamBold
+button.TextSize = 14
+button.BorderSizePixel = 0
+button.Parent = frame
 
-local collectButtonCorner = Instance.new("UICorner")
-collectButtonCorner.CornerRadius = UDim.new(0, 8)
-collectButtonCorner.Parent = collectButton
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = button
 
-local collectButtonStroke = Instance.new("UIStroke")
-collectButtonStroke.Thickness = 2
-collectButtonStroke.Color = Color3.fromRGB(0, 80, 0)
-collectButtonStroke.Parent = collectButton
+-- Button stroke
+local buttonStroke = Instance.new("UIStroke")
+buttonStroke.Thickness = 2
+buttonStroke.Color = Color3.fromRGB(0, 80, 0)
+buttonStroke.Parent = button
 
--- Create Auto Lock Toggle Button
-local lockButton = Instance.new("TextButton")
-lockButton.Size = UDim2.new(0, 250, 0, 45)
-lockButton.Position = UDim2.new(0.5, -125, 0, 95)
-lockButton.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-lockButton.Text = "AUTO LOCK BASE: OFF"
-lockButton.TextColor3 = Color3.fromRGB(100, 0, 100)
-lockButton.Font = Enum.Font.GothamBold
-lockButton.TextSize = 13
-lockButton.BorderSizePixel = 0
-lockButton.Parent = frame
+-- State variable
+local autoPickupEnabled = false
+local isHoldingE = false
 
-local lockButtonCorner = Instance.new("UICorner")
-lockButtonCorner.CornerRadius = UDim.new(0, 8)
-lockButtonCorner.Parent = lockButton
-
-local lockButtonStroke = Instance.new("UIStroke")
-lockButtonStroke.Thickness = 2
-lockButtonStroke.Color = Color3.fromRGB(80, 0, 80)
-lockButtonStroke.Parent = lockButton
-
--- State variables
-local autoCollectEnabled = false
-local autoLockEnabled = false
-
--- Toggle auto collect function
-collectButton.MouseButton1Click:Connect(function()
-    autoCollectEnabled = not autoCollectEnabled
+-- Toggle function
+button.MouseButton1Click:Connect(function()
+    autoPickupEnabled = not autoPickupEnabled
    
-    if autoCollectEnabled then
-        collectButton.TextColor3 = Color3.fromRGB(0, 255, 0)
-        collectButton.Text = "AUTO COLLECT CASH: ON"
-        collectButtonStroke.Color = Color3.fromRGB(0, 255, 0)
+    if autoPickupEnabled then
+        button.TextColor3 = Color3.fromRGB(0, 255, 0)
+        button.Text = "AUTO PICKUP: ON"
+        buttonStroke.Color = Color3.fromRGB(0, 255, 0)
     else
-        collectButton.TextColor3 = Color3.fromRGB(0, 100, 0)
-        collectButton.Text = "AUTO COLLECT CASH: OFF"
-        collectButtonStroke.Color = Color3.fromRGB(0, 80, 0)
+        button.TextColor3 = Color3.fromRGB(0, 100, 0)
+        button.Text = "AUTO PICKUP: OFF"
+        buttonStroke.Color = Color3.fromRGB(0, 80, 0)
+        -- Release E key if it's being held
+        if isHoldingE then
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+            isHoldingE = false
+        end
     end
 end)
 
--- Toggle auto lock function
-lockButton.MouseButton1Click:Connect(function()
-    autoLockEnabled = not autoLockEnabled
+-- Function to check if near a brainrot
+local function isNearBrainrot()
+    local character = player.Character
+    if not character then return false end
     
-    if autoLockEnabled then
-        lockButton.TextColor3 = Color3.fromRGB(255, 0, 255)
-        lockButton.Text = "AUTO LOCK BASE: ON"
-        lockButtonStroke.Color = Color3.fromRGB(255, 0, 255)
-    else
-        lockButton.TextColor3 = Color3.fromRGB(100, 0, 100)
-        lockButton.Text = "AUTO LOCK BASE: OFF"
-        lockButtonStroke.Color = Color3.fromRGB(80, 0, 80)
-    end
-end)
-
--- Function to collect cash
-local function collectCash()
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return false end
+    
+    -- Search for brainrot models in workspace
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ClickDetector") then
-            local parent = obj.Parent
-            if parent and parent:IsA("Part") then
-                -- Check if it's a cash part (usually named "Cash" or has certain properties)
-                if parent.Name:lower():find("cash") or parent.Name:lower():find("money") or 
-                   parent.BrickColor == BrickColor.new("Lime green") or 
-                   parent.Color == Color3.fromRGB(0, 255, 0) then
+        if obj:IsA("Model") and obj.Name ~= character.Name then
+            -- Check if it's a brainrot (they are usually small models with specific characteristics)
+            local primaryPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+            
+            if primaryPart then
+                local distance = (primaryPart.Position - rootPart.Position).Magnitude
+                
+                -- If within pickup range (around 10-15 studs)
+                if distance <= 15 then
+                    -- Additional check: Make sure it's not the player's own brainrot
+                    -- Brainrots in other bases will be further from the player's spawn
+                    local isLikelyBrainrot = true
                     
-                    -- Fire the click detector
-                    local success = pcall(function()
-                        fireclickdetector(obj)
-                    end)
+                    -- Check if model has characteristics of a brainrot
+                    -- They usually have multiple parts and are relatively small
+                    local partCount = 0
+                    for _, child in pairs(obj:GetDescendants()) do
+                        if child:IsA("BasePart") then
+                            partCount = partCount + 1
+                        end
+                    end
                     
-                    if not success then
-                        -- Fallback method if fireclickdetector doesn't work
-                        pcall(function()
-                            local character = player.Character
-                            if character then
-                                local rootPart = character:FindFirstChild("HumanoidRootPart")
-                                if rootPart then
-                                    local oldCFrame = rootPart.CFrame
-                                    rootPart.CFrame = parent.CFrame
-                                    task.wait(0.1)
-                                    fireclickdetector(obj)
-                                    task.wait(0.1)
-                                    rootPart.CFrame = oldCFrame
-                                end
-                            end
-                        end)
+                    if partCount > 0 and partCount < 50 then
+                        return true, obj
                     end
                 end
             end
         end
     end
+    
+    return false, nil
 end
 
--- Function to lock base
-local function lockBase()
-    -- Look for lock button in player's base
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ClickDetector") and obj.Parent then
-            local parent = obj.Parent
-            if parent.Name:lower():find("lock") or parent.Name:lower():find("button") then
-                -- Check if it's near the player's base
-                local character = player.Character
-                if character and character:FindFirstChild("HumanoidRootPart") then
-                    local distance = (parent.Position - character.HumanoidRootPart.Position).Magnitude
-                    if distance < 100 then
-                        pcall(function()
-                            fireclickdetector(obj)
-                        end)
-                    end
+-- Main auto pickup loop
+task.spawn(function()
+    while task.wait(0.1) do
+        if autoPickupEnabled then
+            local nearBrainrot, brainrotModel = isNearBrainrot()
+            
+            if nearBrainrot then
+                -- Hold down E key
+                if not isHoldingE then
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    isHoldingE = true
+                end
+            else
+                -- Release E key when not near a brainrot
+                if isHoldingE then
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                    isHoldingE = false
                 end
             end
-        end
-    end
-end
-
--- Main auto collect loop
-task.spawn(function()
-    while task.wait(0.5) do
-        if autoCollectEnabled then
-            pcall(collectCash)
-        end
-    end
-end)
-
--- Main auto lock loop
-task.spawn(function()
-    while task.wait(2) do
-        if autoLockEnabled then
-            pcall(lockBase)
-        end
-    end
-end)
-
--- Alternative method: Listen for new cash parts being added
-workspace.DescendantAdded:Connect(function(obj)
-    if autoCollectEnabled then
-        task.wait(0.1)
-        if obj:IsA("ClickDetector") then
-            local parent = obj.Parent
-            if parent and parent:IsA("Part") then
-                if parent.Name:lower():find("cash") or parent.Name:lower():find("money") or 
-                   parent.BrickColor == BrickColor.new("Lime green") or 
-                   parent.Color == Color3.fromRGB(0, 255, 0) then
-                    task.wait(0.2)
-                    pcall(function()
-                        fireclickdetector(obj)
-                    end)
-                end
+        else
+            -- Make sure E is released if auto pickup is disabled
+            if isHoldingE then
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                isHoldingE = false
             end
         end
     end
 end)
 
-print("✅ NEXA Auto Collect Cash loaded successfully!")
-print("💰 Toggle Auto Collect to start collecting cash automatically")
-print("🔒 Toggle Auto Lock to automatically lock your base")
+-- Cleanup on death
+player.CharacterAdded:Connect(function()
+    if isHoldingE then
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+        isHoldingE = false
+    end
+end)
+
+print("✅ NEXA Auto Pickup loaded!")
+print("🧠 Toggle ON and walk near brainrots to auto steal them!")
+print("⚡ The script will automatically hold E for you!")
