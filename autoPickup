@@ -59,11 +59,11 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
 
--- Main Frame with gradient background
+-- Main Frame with much brighter colors
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 450, 0, 580)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -290)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.Size = UDim2.new(0, 420, 0, 550)
+MainFrame.Position = UDim2.new(0.5, -210, 0.5, -275)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -71,38 +71,29 @@ MainFrame.Parent = ScreenGui
 
 -- Rounded corners
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 16)
+MainCorner.CornerRadius = UDim.new(0, 15)
 MainCorner.Parent = MainFrame
 
--- Gradient overlay
-local Gradient = Instance.new("UIGradient")
-Gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 32)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 20))
-})
-Gradient.Rotation = 45
-Gradient.Parent = MainFrame
-
--- Glowing border
+-- Much brighter glowing border
 local MainStroke = Instance.new("UIStroke")
-MainStroke.Color = Color3.fromRGB(138, 43, 226)
-MainStroke.Thickness = 2
-MainStroke.Transparency = 0.3
+MainStroke.Color = Color3.fromRGB(180, 80, 255)
+MainStroke.Thickness = 3
+MainStroke.Transparency = 0
 MainStroke.Parent = MainFrame
 
 -- Animated gradient for stroke
 local StrokeGradient = Instance.new("UIGradient")
 StrokeGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 85, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(138, 43, 226))
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 80, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 120, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 80, 255))
 })
 StrokeGradient.Parent = MainStroke
 
 -- Animate the stroke gradient
 task.spawn(function()
     while MainFrame.Parent do
-        for i = 0, 360, 2 do
+        for i = 0, 360, 3 do
             if not MainFrame.Parent then break end
             StrokeGradient.Rotation = i
             task.wait(0.03)
@@ -110,89 +101,64 @@ task.spawn(function()
     end
 end)
 
--- Drop shadow effect
-local Shadow = Instance.new("ImageLabel")
-Shadow.Name = "Shadow"
-Shadow.Size = UDim2.new(1, 30, 1, 30)
-Shadow.Position = UDim2.new(0, -15, 0, -15)
-Shadow.BackgroundTransparency = 1
-Shadow.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-Shadow.ImageTransparency = 0.7
-Shadow.ScaleType = Enum.ScaleType.Slice
-Shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-Shadow.ZIndex = 0
-Shadow.Parent = MainFrame
-
--- Header container with glass effect
+-- Header with bright background
 local HeaderFrame = Instance.new("Frame")
-HeaderFrame.Size = UDim2.new(1, 0, 0, 80)
-HeaderFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-HeaderFrame.BackgroundTransparency = 0.3
+HeaderFrame.Size = UDim2.new(1, 0, 0, 70)
+HeaderFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
 HeaderFrame.BorderSizePixel = 0
 HeaderFrame.Parent = MainFrame
 
-Instance.new("UICorner", HeaderFrame).CornerRadius = UDim.new(0, 16)
+Instance.new("UICorner", HeaderFrame).CornerRadius = UDim.new(0, 15)
 
--- Header gradient
-local HeaderGradient = Instance.new("UIGradient")
-HeaderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 45)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 35))
-})
-HeaderGradient.Rotation = 90
-HeaderGradient.Parent = HeaderFrame
+-- Header bottom border
+local HeaderBorder = Instance.new("Frame")
+HeaderBorder.Size = UDim2.new(1, 0, 0, 2)
+HeaderBorder.Position = UDim2.new(0, 0, 1, -2)
+HeaderBorder.BackgroundColor3 = Color3.fromRGB(180, 80, 255)
+HeaderBorder.BorderSizePixel = 0
+HeaderBorder.Parent = HeaderFrame
 
--- Title with glow effect
+-- Big visible title
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -30, 0, 35)
-Title.Position = UDim2.new(0, 20, 0, 15)
+Title.Size = UDim2.new(1, -20, 0, 30)
+Title.Position = UDim2.new(0, 15, 0, 10)
 Title.BackgroundTransparency = 1
 Title.Text = "🧠 Modern Brainrot Hub"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 24
+Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
 Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.TextStrokeTransparency = 0.8
-Title.TextStrokeColor3 = Color3.fromRGB(138, 43, 226)
+Title.TextStrokeTransparency = 0.5
+Title.TextStrokeColor3 = Color3.fromRGB(180, 80, 255)
 Title.Parent = HeaderFrame
 
--- Title gradient
-local TitleGradient = Instance.new("UIGradient")
-TitleGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 150, 255))
-})
-TitleGradient.Parent = Title
-
--- Subtitle with fade
+-- Bright subtitle
 local Subtitle = Instance.new("TextLabel")
-Subtitle.Size = UDim2.new(1, -30, 0, 20)
-Subtitle.Position = UDim2.new(0, 20, 0, 50)
+Subtitle.Size = UDim2.new(1, -20, 0, 20)
+Subtitle.Position = UDim2.new(0, 15, 0, 42)
 Subtitle.BackgroundTransparency = 1
-Subtitle.Text = "Premium Edition • All Features Unlocked"
-Subtitle.TextColor3 = Color3.fromRGB(160, 160, 180)
-Subtitle.TextSize = 13
-Subtitle.Font = Enum.Font.Gotham
+Title.Text = "Premium Edition • v2.0"
+Subtitle.TextColor3 = Color3.fromRGB(200, 200, 220)
+Subtitle.TextSize = 14
+Subtitle.Font = Enum.Font.GothamSemibold
 Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-Subtitle.TextTransparency = 0.3
 Subtitle.Parent = HeaderFrame
 
--- Status indicator
+-- Bright status indicator
 local StatusDot = Instance.new("Frame")
-StatusDot.Size = UDim2.new(0, 8, 0, 8)
-StatusDot.Position = UDim2.new(1, -20, 0, 28)
-StatusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+StatusDot.Size = UDim2.new(0, 10, 0, 10)
+StatusDot.Position = UDim2.new(1, -20, 0, 25)
+StatusDot.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 StatusDot.BorderSizePixel = 0
 StatusDot.Parent = HeaderFrame
 
 Instance.new("UICorner", StatusDot).CornerRadius = UDim.new(1, 0)
 
--- Pulse animation for status dot
+-- Pulse animation
 task.spawn(function()
     while StatusDot.Parent do
         TweenService:Create(StatusDot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-            BackgroundTransparency = 0.5
+            BackgroundTransparency = 0.3
         }):Play()
         task.wait(0.8)
         TweenService:Create(StatusDot, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
@@ -202,128 +168,80 @@ task.spawn(function()
     end
 end)
 
--- Scroll Frame with custom styling
+-- Brighter scroll frame
 local ScrollFrame = Instance.new("ScrollingFrame")
-ScrollFrame.Size = UDim2.new(1, -30, 1, -110)
-ScrollFrame.Position = UDim2.new(0, 15, 0, 95)
+ScrollFrame.Size = UDim2.new(1, -20, 1, -90)
+ScrollFrame.Position = UDim2.new(0, 10, 0, 80)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.BorderSizePixel = 0
-ScrollFrame.ScrollBarThickness = 4
-ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(138, 43, 226)
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(180, 80, 255)
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
 ScrollFrame.Parent = MainFrame
 
--- Custom scrollbar
-local ScrollBarCorner = Instance.new("UICorner")
-ScrollBarCorner.CornerRadius = UDim.new(1, 0)
-
 local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Padding = UDim.new(0, 12)
+UIListLayout.Padding = UDim.new(0, 10)
 UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 UIListLayout.Parent = ScrollFrame
 
--- Helper function to create toggles with professional styling
+-- Helper function to create toggles with BRIGHT visible styling
 local function CreateToggle(name, callback)
     local ToggleFrame = Instance.new("Frame")
-    ToggleFrame.Size = UDim2.new(1, 0, 0, 55)
-    ToggleFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
-    ToggleFrame.BackgroundTransparency = 0.4
+    ToggleFrame.Size = UDim2.new(1, 0, 0, 50)
+    ToggleFrame.BackgroundColor3 = Color3.fromRGB(55, 55, 70)
     ToggleFrame.BorderSizePixel = 0
     ToggleFrame.Parent = ScrollFrame
     
     local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(0, 12)
+    ToggleCorner.CornerRadius = UDim.new(0, 10)
     ToggleCorner.Parent = ToggleFrame
     
-    -- Glass effect
-    local ToggleGradient = Instance.new("UIGradient")
-    ToggleGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 45)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(28, 28, 35))
-    })
-    ToggleGradient.Rotation = 90
-    ToggleGradient.Parent = ToggleFrame
-    
-    -- Subtle border
+    -- Bright visible border
     local ToggleBorder = Instance.new("UIStroke")
-    ToggleBorder.Color = Color3.fromRGB(60, 60, 75)
-    ToggleBorder.Thickness = 1
-    ToggleBorder.Transparency = 0.5
+    ToggleBorder.Color = Color3.fromRGB(100, 100, 120)
+    ToggleBorder.Thickness = 2
+    ToggleBorder.Transparency = 0
     ToggleBorder.Parent = ToggleFrame
     
-    -- Icon (optional decorative element)
-    local Icon = Instance.new("Frame")
-    Icon.Size = UDim2.new(0, 6, 0, 6)
-    Icon.Position = UDim2.new(0, 15, 0.5, -3)
-    Icon.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    Icon.BorderSizePixel = 0
-    Icon.Parent = ToggleFrame
-    
-    Instance.new("UICorner", Icon).CornerRadius = UDim.new(1, 0)
-    
-    -- Label with gradient
+    -- Big visible label
     local Label = Instance.new("TextLabel")
     Label.Size = UDim2.new(0.65, 0, 1, 0)
-    Label.Position = UDim2.new(0, 30, 0, 0)
+    Label.Position = UDim2.new(0, 15, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Text = name
     Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.TextSize = 15
+    Label.TextSize = 16
     Label.Font = Enum.Font.GothamBold
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = ToggleFrame
     
-    local LabelGradient = Instance.new("UIGradient")
-    LabelGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 220, 240))
-    })
-    LabelGradient.Parent = Label
-    
-    -- Modern toggle switch container
+    -- MUCH bigger and more visible toggle switch
     local ToggleBg = Instance.new("Frame")
-    ToggleBg.Size = UDim2.new(0, 54, 0, 30)
-    ToggleBg.Position = UDim2.new(1, -65, 0.5, -15)
-    ToggleBg.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    ToggleBg.Size = UDim2.new(0, 60, 0, 32)
+    ToggleBg.Position = UDim2.new(1, -70, 0.5, -16)
+    ToggleBg.BackgroundColor3 = Color3.fromRGB(70, 70, 85)
     ToggleBg.BorderSizePixel = 0
     ToggleBg.Parent = ToggleFrame
     
     Instance.new("UICorner", ToggleBg).CornerRadius = UDim.new(1, 0)
     
-    -- Toggle gradient
-    local ToggleBgGradient = Instance.new("UIGradient")
-    ToggleBgGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 40, 50))
-    })
-    ToggleBgGradient.Rotation = 90
-    ToggleBgGradient.Parent = ToggleBg
+    -- Visible border for toggle
+    local ToggleBgBorder = Instance.new("UIStroke")
+    ToggleBgBorder.Color = Color3.fromRGB(120, 120, 140)
+    ToggleBgBorder.Thickness = 2
+    ToggleBgBorder.Parent = ToggleBg
     
-    -- Inner shadow
-    local ToggleShadow = Instance.new("UIStroke")
-    ToggleShadow.Color = Color3.fromRGB(20, 20, 25)
-    ToggleShadow.Thickness = 2
-    ToggleShadow.Transparency = 0.8
-    ToggleShadow.Parent = ToggleBg
-    
-    -- Toggle circle
+    -- Big bright toggle circle
     local ToggleCircle = Instance.new("Frame")
-    ToggleCircle.Size = UDim2.new(0, 24, 0, 24)
-    ToggleCircle.Position = UDim2.new(0, 3, 0.5, -12)
+    ToggleCircle.Size = UDim2.new(0, 26, 0, 26)
+    ToggleCircle.Position = UDim2.new(0, 3, 0.5, -13)
     ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     ToggleCircle.BorderSizePixel = 0
     ToggleCircle.Parent = ToggleBg
     
     Instance.new("UICorner", ToggleCircle).CornerRadius = UDim.new(1, 0)
-    
-    -- Circle shadow
-    local CircleStroke = Instance.new("UIStroke")
-    CircleStroke.Color = Color3.fromRGB(100, 100, 120)
-    CircleStroke.Thickness = 1
-    CircleStroke.Transparency = 0.5
-    CircleStroke.Parent = ToggleCircle
     
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, 0, 1, 0)
@@ -333,22 +251,22 @@ local function CreateToggle(name, callback)
     
     local enabled = false
     
-    -- Hover effect
+    -- Hover effect - make it glow
     Button.MouseEnter:Connect(function()
-        TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 0.2
+        TweenService:Create(ToggleFrame, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(65, 65, 80)
         }):Play()
-        TweenService:Create(ToggleBorder, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            Transparency = 0.3
+        TweenService:Create(ToggleBorder, TweenInfo.new(0.2), {
+            Color = Color3.fromRGB(180, 80, 255)
         }):Play()
     end)
     
     Button.MouseLeave:Connect(function()
-        TweenService:Create(ToggleFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 0.4
+        TweenService:Create(ToggleFrame, TweenInfo.new(0.2), {
+            BackgroundColor3 = Color3.fromRGB(55, 55, 70)
         }):Play()
-        TweenService:Create(ToggleBorder, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            Transparency = 0.5
+        TweenService:Create(ToggleBorder, TweenInfo.new(0.2), {
+            Color = Color3.fromRGB(100, 100, 120)
         }):Play()
     end)
     
@@ -356,150 +274,98 @@ local function CreateToggle(name, callback)
         enabled = not enabled
         callback(enabled)
         
-        -- Animate toggle background
-        TweenService:Create(ToggleBg, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            BackgroundColor3 = enabled and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(45, 45, 55)
+        -- Super bright purple when ON
+        TweenService:Create(ToggleBg, TweenInfo.new(0.3), {
+            BackgroundColor3 = enabled and Color3.fromRGB(180, 80, 255) or Color3.fromRGB(70, 70, 85)
         }):Play()
         
-        TweenService:Create(ToggleBgGradient, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            Color = enabled and ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 60, 255)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(120, 30, 200))
-            }) or ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 40, 50))
-            })
+        TweenService:Create(ToggleBgBorder, TweenInfo.new(0.3), {
+            Color = enabled and Color3.fromRGB(255, 120, 255) or Color3.fromRGB(120, 120, 140)
         }):Play()
         
-        -- Animate circle
-        TweenService:Create(ToggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Position = enabled and UDim2.new(0, 27, 0.5, -12) or UDim2.new(0, 3, 0.5, -12),
-            BackgroundColor3 = enabled and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 210)
+        -- Move circle
+        TweenService:Create(ToggleCircle, TweenInfo.new(0.3), {
+            Position = enabled and UDim2.new(0, 31, 0.5, -13) or UDim2.new(0, 3, 0.5, -13)
         }):Play()
         
-        -- Animate icon
-        TweenService:Create(Icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {
-            BackgroundColor3 = enabled and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(138, 43, 226)
-        }):Play()
-        
-        -- Quick scale animation for feedback
-        local originalSize = ToggleCircle.Size
-        TweenService:Create(ToggleCircle, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(0, 20, 0, 20)
-        }):Play()
-        task.wait(0.1)
-        TweenService:Create(ToggleCircle, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            Size = originalSize
+        -- Make label brighter when enabled
+        TweenService:Create(Label, TweenInfo.new(0.3), {
+            TextColor3 = enabled and Color3.fromRGB(255, 200, 255) or Color3.fromRGB(255, 255, 255)
         }):Play()
     end)
     
     return ToggleFrame
 end
 
--- Helper function for action buttons with premium styling
+-- Helper function for action buttons - BRIGHT AND VISIBLE
 local function CreateButton(name, color, callback)
     local ButtonFrame = Instance.new("TextButton")
-    ButtonFrame.Size = UDim2.new(1, 0, 0, 50)
+    ButtonFrame.Size = UDim2.new(1, 0, 0, 48)
     ButtonFrame.BackgroundColor3 = color
-    ButtonFrame.BackgroundTransparency = 0.2
     ButtonFrame.BorderSizePixel = 0
     ButtonFrame.Text = ""
     ButtonFrame.AutoButtonColor = false
     ButtonFrame.Parent = ScrollFrame
     
     local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(0, 12)
+    ButtonCorner.CornerRadius = UDim.new(0, 10)
     ButtonCorner.Parent = ButtonFrame
     
-    -- Gradient overlay
-    local ButtonGradient = Instance.new("UIGradient")
-    local baseColor = color
-    ButtonGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(
-            math.min(baseColor.R * 255 + 20, 255),
-            math.min(baseColor.G * 255 + 20, 255),
-            math.min(baseColor.B * 255 + 20, 255)
-        )),
-        ColorSequenceKeypoint.new(1, baseColor)
-    })
-    ButtonGradient.Rotation = 90
-    ButtonGradient.Parent = ButtonFrame
-    
-    -- Subtle border
+    -- Bright visible border
     local ButtonStroke = Instance.new("UIStroke")
     ButtonStroke.Color = Color3.fromRGB(255, 255, 255)
-    ButtonStroke.Thickness = 1
-    ButtonStroke.Transparency = 0.8
+    ButtonStroke.Thickness = 2
+    ButtonStroke.Transparency = 0.5
     ButtonStroke.Parent = ButtonFrame
     
-    -- Button text with shadow
+    -- Big bright text
     local ButtonText = Instance.new("TextLabel")
-    ButtonText.Size = UDim2.new(1, -20, 1, 0)
-    ButtonText.Position = UDim2.new(0, 10, 0, 0)
+    ButtonText.Size = UDim2.new(1, 0, 1, 0)
     ButtonText.BackgroundTransparency = 1
     ButtonText.Text = name
     ButtonText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ButtonText.TextSize = 15
+    ButtonText.TextSize = 17
     ButtonText.Font = Enum.Font.GothamBold
-    ButtonText.TextXAlignment = Enum.TextXAlignment.Center
-    ButtonText.TextStrokeTransparency = 0.8
+    ButtonText.TextStrokeTransparency = 0.5
+    ButtonText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     ButtonText.Parent = ButtonFrame
     
-    -- Shine effect overlay
-    local Shine = Instance.new("Frame")
-    Shine.Size = UDim2.new(0, 0, 1, 0)
-    Shine.Position = UDim2.new(0, 0, 0, 0)
-    Shine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Shine.BackgroundTransparency = 0.8
-    Shine.BorderSizePixel = 0
-    Shine.ZIndex = 2
-    Shine.Parent = ButtonFrame
-    
-    Instance.new("UICorner", Shine).CornerRadius = UDim.new(0, 12)
-    
-    -- Hover effects
+    -- Hover effects - make it glow bright
     ButtonFrame.MouseEnter:Connect(function()
-        TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 0
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.2), {
+            Size = UDim2.new(1, 0, 0, 52)
         }):Play()
-        TweenService:Create(ButtonStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            Transparency = 0.5
+        TweenService:Create(ButtonStroke, TweenInfo.new(0.2), {
+            Transparency = 0.2,
+            Thickness = 3
         }):Play()
-        TweenService:Create(ButtonText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            TextSize = 16
+        TweenService:Create(ButtonText, TweenInfo.new(0.2), {
+            TextSize = 18
         }):Play()
     end)
     
     ButtonFrame.MouseLeave:Connect(function()
-        TweenService:Create(ButtonFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            BackgroundTransparency = 0.2
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.2), {
+            Size = UDim2.new(1, 0, 0, 48)
         }):Play()
-        TweenService:Create(ButtonStroke, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            Transparency = 0.8
+        TweenService:Create(ButtonStroke, TweenInfo.new(0.2), {
+            Transparency = 0.5,
+            Thickness = 2
         }):Play()
-        TweenService:Create(ButtonText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
-            TextSize = 15
+        TweenService:Create(ButtonText, TweenInfo.new(0.2), {
+            TextSize = 17
         }):Play()
     end)
     
     -- Click animation
     ButtonFrame.MouseButton1Click:Connect(function()
-        -- Shine animation
-        Shine.Size = UDim2.new(0, 0, 1, 0)
-        Shine.Position = UDim2.new(0, 0, 0, 0)
-        TweenService:Create(Shine, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 1, 0),
-            Position = UDim2.new(0, 0, 0, 0),
-            BackgroundTransparency = 1
-        }):Play()
-        
-        -- Scale animation
-        TweenService:Create(ButtonFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(1, -4, 0, 48)
+        -- Quick press animation
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {
+            Size = UDim2.new(1, 0, 0, 45)
         }):Play()
         task.wait(0.1)
-        TweenService:Create(ButtonFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-            Size = UDim2.new(1, 0, 0, 50)
+        TweenService:Create(ButtonFrame, TweenInfo.new(0.1), {
+            Size = UDim2.new(1, 0, 0, 48)
         }):Play()
         
         callback()
@@ -1122,49 +988,24 @@ end
 -- CREATE GUI ELEMENTS
 -- ============================================================
 
--- Helper function to create section headers
+-- Helper function to create BRIGHT visible section headers
 local function CreateSection(title)
     local SectionFrame = Instance.new("Frame")
-    SectionFrame.Size = UDim2.new(1, 0, 0, 35)
+    SectionFrame.Size = UDim2.new(1, 0, 0, 32)
     SectionFrame.BackgroundTransparency = 1
     SectionFrame.Parent = ScrollFrame
     
-    local SectionLine = Instance.new("Frame")
-    SectionLine.Size = UDim2.new(0, 3, 1, -10)
-    SectionLine.Position = UDim2.new(0, 0, 0, 5)
-    SectionLine.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
-    SectionLine.BorderSizePixel = 0
-    SectionLine.Parent = SectionFrame
-    
-    Instance.new("UICorner", SectionLine).CornerRadius = UDim.new(1, 0)
-    
-    local SectionGradient = Instance.new("UIGradient")
-    SectionGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 85, 255))
-    })
-    SectionGradient.Rotation = 90
-    SectionGradient.Parent = SectionLine
-    
     local SectionLabel = Instance.new("TextLabel")
-    SectionLabel.Size = UDim2.new(1, -15, 1, 0)
-    SectionLabel.Position = UDim2.new(0, 15, 0, 0)
+    SectionLabel.Size = UDim2.new(1, 0, 1, 0)
     SectionLabel.BackgroundTransparency = 1
     SectionLabel.Text = title
-    SectionLabel.TextColor3 = Color3.fromRGB(138, 43, 226)
-    SectionLabel.TextSize = 17
+    SectionLabel.TextColor3 = Color3.fromRGB(255, 200, 255)
+    SectionLabel.TextSize = 19
     SectionLabel.Font = Enum.Font.GothamBold
     SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SectionLabel.TextStrokeTransparency = 0.8
-    SectionLabel.TextStrokeColor3 = Color3.fromRGB(138, 43, 226)
+    SectionLabel.TextStrokeTransparency = 0.3
+    SectionLabel.TextStrokeColor3 = Color3.fromRGB(180, 80, 255)
     SectionLabel.Parent = SectionFrame
-    
-    local LabelGradient = Instance.new("UIGradient")
-    LabelGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(138, 43, 226)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 100, 255))
-    })
-    LabelGradient.Parent = SectionLabel
     
     return SectionFrame
 end
@@ -1250,7 +1091,7 @@ end)
 -- Startup notification
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Modern Brainrot Hub";
-    Text = "Loaded successfully! All features stolen from Nexa Hub";
+    Text = "Loaded successfully! All features stolen from BK's Hub";
     Duration = 5;
 })
 
