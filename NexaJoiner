@@ -130,18 +130,43 @@ local function findChilliGui()
 	print("🔍 SEARCHING FOR CHILLI HUB...")
 	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	
-	local possibleNames = {"ChilliHub", "Chilli Hub", "Chilli", "ChilliGUI", "ScreenGui"}
+	-- First, list ALL GUIs to see what's available
+	print("📋 All PlayerGui children:")
+	for _, gui in pairs(playerGui:GetChildren()) do
+		if gui:IsA("ScreenGui") then
+			print("  -", gui.Name)
+		end
+	end
+	print("")
+	
+	local possibleNames = {
+		"Chilli Hub Premium",  -- Added!
+		"ChilliHub", 
+		"Chilli Hub", 
+		"Chilli", 
+		"ChilliGUI", 
+		"ScreenGui"
+	}
 	
 	for _, name in pairs(possibleNames) do
 		local gui = playerGui:FindFirstChild(name)
 		if gui then
-			-- Verify it's Chilli
+			print("✅ Found GUI:", name)
+			
+			-- Check if it's actually Chilli by looking for specific text
 			for _, obj in pairs(gui:GetDescendants()) do
-				if obj:IsA("TextLabel") and obj.Text and obj.Text:lower():find("chilli") then
-					print("✅ Found Chilli GUI:", name)
-					return gui
+				if obj:IsA("TextLabel") then
+					local text = obj.Text and obj.Text:lower() or ""
+					if text:find("chilli") or text:find("server") or text:find("main") then
+						print("✅ Confirmed Chilli GUI:", name)
+						return gui
+					end
 				end
 			end
+			
+			-- If we found a GUI but couldn't confirm, still return it
+			print("⚠️ Found GUI but couldn't confirm it's Chilli")
+			return gui
 		end
 	end
 	
@@ -157,21 +182,19 @@ local function findChilliJobInput()
 	
 	print("🔍 Searching for Job ID input...")
 	
-	-- Look for Servers section first
+	-- Look for "Server Tools" section (I can see it in your screenshot!)
 	for _, obj in pairs(chilliGui:GetDescendants()) do
-		if obj:IsA("Frame") and obj.Name:lower():find("server") then
-			print("✅ Found Servers section")
+		if obj:IsA("TextLabel") and obj.Text and obj.Text:find("Server Tools") then
+			print("✅ Found 'Server Tools' label")
 			
-			-- Look for textbox inside
-			for _, child in pairs(obj:GetDescendants()) do
-				if child:IsA("TextBox") then
-					local name = child.Name:lower()
-					local placeholder = child.PlaceholderText and child.PlaceholderText:lower() or ""
-					
-					if name:find("job") or name:find("id") or placeholder:find("job") or placeholder:find("id") then
-						print("✅ Found Job ID Input:", child:GetFullName())
+			-- Look for textbox near it
+			local parent = obj.Parent
+			if parent then
+				for _, child in pairs(parent:GetDescendants()) do
+					if child:IsA("TextBox") then
+						print("✅ Found TextBox near Server Tools:", child:GetFullName())
 						print("   Name:", child.Name)
-						print("   Placeholder:", child.PlaceholderText)
+						print("   Placeholder:", child.PlaceholderText or "none")
 						return child
 					end
 				end
@@ -179,13 +202,32 @@ local function findChilliJobInput()
 		end
 	end
 	
-	-- Fallback: Search all textboxes
-	print("⚠️ Searching all textboxes...")
+	-- Fallback: Look for any textbox in Server section
+	print("⚠️ Searching for 'Server' frame...")
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("Frame") and obj.Name:find("Server") then
+			print("✅ Found Server frame:", obj.Name)
+			
+			-- Look for textbox inside
+			for _, child in pairs(obj:GetDescendants()) do
+				if child:IsA("TextBox") then
+					print("✅ Found TextBox in Server frame:", child:GetFullName())
+					print("   Name:", child.Name)
+					print("   Placeholder:", child.PlaceholderText or "none")
+					return child
+				end
+			end
+		end
+	end
+	
+	-- Last resort: List ALL textboxes
+	print("⚠️ Listing ALL textboxes in Chilli GUI:")
 	for _, obj in pairs(chilliGui:GetDescendants()) do
 		if obj:IsA("TextBox") then
-			print("📦 Found TextBox:", obj:GetFullName())
+			print("📦 TextBox:", obj:GetFullName())
 			print("   Name:", obj.Name)
 			print("   Placeholder:", obj.PlaceholderText or "none")
+			print("   Visible:", obj.Visible)
 		end
 	end
 	
