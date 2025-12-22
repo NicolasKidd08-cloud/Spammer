@@ -1,0 +1,126 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+
+-- Create ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NexaAutoPickupGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+
+-- Create Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 80)
+frame.Position = UDim2.new(0.5, -125, 0, 30)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 12)
+frameCorner.Parent = frame
+
+
+-- Create Rainbow Outline
+local outline = Instance.new("UIStroke")
+outline.Thickness = 3
+outline.Parent = frame
+
+
+-- Rainbow animation for outline
+local hue = 0
+game:GetService("RunService").Heartbeat:Connect(function()
+    hue = hue + 0.005
+    if hue >= 1 then hue = 0 end
+    outline.Color = Color3.fromHSV(hue, 1, 1)
+end)
+
+
+-- Create Toggle Button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 220, 0, 50)
+button.Position = UDim2.new(0.5, -110, 0.5, -25)
+button.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+button.Text = "NEXA AUTO PICK UP: OFF"
+button.TextColor3 = Color3.fromRGB(0, 100, 0)
+button.Font = Enum.Font.GothamBold
+button.TextSize = 14
+button.BorderSizePixel = 0
+button.Parent = frame
+
+
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 8)
+buttonCorner.Parent = button
+
+
+-- Button stroke
+local buttonStroke = Instance.new("UIStroke")
+buttonStroke.Thickness = 2
+buttonStroke.Color = Color3.fromRGB(0, 80, 0)
+buttonStroke.Parent = button
+
+
+-- State variable
+local instaPickupEnabled = false
+
+
+-- Toggle function
+button.MouseButton1Click:Connect(function()
+    instaPickupEnabled = not instaPickupEnabled
+   
+    if instaPickupEnabled then
+        button.TextColor3 = Color3.fromRGB(0, 255, 0)
+        button.Text = "NEXA AUTO PICK UP: ON"
+        buttonStroke.Color = Color3.fromRGB(0, 255, 0)
+    else
+        button.TextColor3 = Color3.fromRGB(0, 100, 0)
+        button.Text = "NEXA AUTO PICK UP: OFF"
+        buttonStroke.Color = Color3.fromRGB(0, 80, 0)
+    end
+end)
+
+
+-- Instant pickup logic - Auto pickup without holding E (optimized to reduce lag)
+local lastCheck = 0
+local checkInterval = 0.5 -- Check every 0.5 seconds instead of every frame
+
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    if not instaPickupEnabled then return end
+   
+    local currentTime = tick()
+    if currentTime - lastCheck < checkInterval then return end
+    lastCheck = currentTime
+   
+    local character = player.Character
+    if not character then return end
+   
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+   
+    -- Check for ProximityPrompts near the player
+    for _, item in pairs(workspace:GetDescendants()) do
+        if item:IsA("ProximityPrompt") then
+            local promptParent = item.Parent
+            if promptParent and promptParent:IsA("BasePart") then
+                -- Check if it's a Brainrot item
+                if item.ObjectText:lower():find("brainrot") or promptParent.Name:lower():find("brainrot") then
+                    local distance = (promptParent.Position - rootPart.Position).Magnitude
+                   
+                    if distance <= item.MaxActivationDistance then
+                        -- Trigger the prompt instantly
+                        item:InputHoldBegin()
+                        item:InputHoldEnd()
+                        break -- Only pick up one item per check to reduce lag
+                    end
+                end
+            end
+        end
+    end
+end)
+
