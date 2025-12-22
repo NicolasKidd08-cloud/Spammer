@@ -1,71 +1,327 @@
--- CHILLI HUB FINDER - Shows EXACT GUI structure
--- This will tell us the real name of Chilli Hub
+-- NEXA → CHILLI AUTO-PASTE (Luarmor Compatible)
+-- Works with obfuscated/protected Chilli Hub by searching for content
 
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-print("\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🔍 CHILLI HUB DIAGNOSTIC TOOL")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+print("🚀 NEXA → Chilli Bridge (Luarmor Compatible) Loading...")
 
--- List ALL ScreenGuis in PlayerGui
-print("📋 ALL SCREEN GUIS IN PLAYERGUI:")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+-- Configuration
+local SERVER_URL = "http://localhost:8080"
+local UPDATE_INTERVAL = 3
 
-for _, gui in pairs(playerGui:GetChildren()) do
-	if gui:IsA("ScreenGui") then
-		print("\n✅ GUI Name:", gui.Name)
-		print("   Enabled:", gui.Enabled)
-		
-		-- Check if it has Chilli-related text
-		local hasChilli = false
+-- Settings
+local Settings = {
+	ToggleKeybind = Enum.KeyCode.RightControl,
+	AutoClickJoin = true,
+	AutoPaste = true
+}
+
+-- Variables
+local lastJobId = ""
+local isConnected = false
+local connectionAttempts = 0
+
+-- FUNCTION TO FIND CHILLI HUB (Dynamic - works with obfuscated names)
+local function findChilliHub()
+	-- Search for GUI containing "Server Tools" or "Chilli" text
+	for _, gui in pairs(playerGui:GetChildren()) do
 		for _, obj in pairs(gui:GetDescendants()) do
 			if obj:IsA("TextLabel") or obj:IsA("TextButton") then
 				local text = obj.Text or ""
-				if text:lower():find("chilli") or text:find("Server Tools") then
-					hasChilli = true
-					print("   ⭐ CONTAINS CHILLI TEXT:", text)
-					break
+				-- Look for Chilli-specific text
+				if text:find("Server Tools") or text:find("Chilli") or 
+				   text:find("Job-ID") or text:find("Rejoin Server") then
+					return gui
 				end
 			end
 		end
-		
-		if hasChilli then
-			print("\n   🎯 THIS IS PROBABLY CHILLI HUB!")
-			print("   Searching for textboxes...")
-			
-			-- Find all textboxes
-			for _, obj in pairs(gui:GetDescendants()) do
-				if obj:IsA("TextBox") then
-					print("\n   📦 FOUND TEXTBOX:")
-					print("      Full Path:", obj:GetFullName())
-					print("      Name:", obj.Name)
-					print("      Placeholder:", obj.PlaceholderText or "none")
-					print("      Text:", obj.Text or "empty")
-					print("      Visible:", obj.Visible)
-					print("      Parent:", obj.Parent and obj.Parent.Name or "none")
-				end
-			end
-			
-			-- Find all buttons near "Server Tools"
-			print("\n   🔍 Looking for buttons near 'Server Tools'...")
-			for _, obj in pairs(gui:GetDescendants()) do
-				if obj:IsA("TextButton") then
-					local text = obj.Text or ""
-					if text:find("Join") or text:find("Copy") or text:find("Rejoin") then
-						print("\n   🔘 FOUND BUTTON:", text)
-						print("      Full Path:", obj:GetFullName())
-						print("      Name:", obj.Name)
+	end
+	return nil
+end
+
+-- FUNCTION TO FIND JOB ID INPUT (Dynamic search)
+local function findJobIdInput()
+	local chilliGui = findChilliHub()
+	if not chilliGui then 
+		return nil 
+	end
+	
+	-- Strategy 1: Look for textbox near "Job-ID" or "Server" text
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextLabel") and obj.Text then
+			local text = obj.Text
+			if text:find("Job") or text:find("ID") or text:find("Server") then
+				-- Found a label, now look for textbox nearby
+				local parent = obj.Parent
+				if parent then
+					for _, child in pairs(parent:GetDescendants()) do
+						if child:IsA("TextBox") and child.Visible then
+							return child
+						end
 					end
 				end
 			end
 		end
 	end
+	
+	-- Strategy 2: Find the ONLY visible textbox in the active section
+	local visibleTextboxes = {}
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextBox") and obj.Visible and obj.Parent and obj.Parent.Visible then
+			table.insert(visibleTextboxes, obj)
+		end
+	end
+	
+	-- If there's only one visible textbox, it's probably the Job ID input
+	if #visibleTextboxes == 1 then
+		return visibleTextboxes[1]
+	end
+	
+	return nil
 end
 
-print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("✅ DIAGNOSTIC COMPLETE!")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("\n💡 COPY THE EXACT GUI NAME AND TEXTBOX PATH")
-print("📋 Then tell me what you found!\n")
+-- FUNCTION TO FIND JOIN BUTTON (Dynamic search)
+local function findJoinButton()
+	local chilliGui = findChilliHub()
+	if not chilliGui then return nil end
+	
+	-- Look for button with "Join" text near the textbox
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextButton") and obj.Visible then
+			local text = obj.Text or ""
+			if text:find("Join") or text:find("join") then
+				return obj
+			end
+		end
+	end
+	
+	return nil
+end
+
+-- FUNCTION TO PASTE INTO CHILLI
+local function pasteToChilli(jobId, jobName)
+	if not jobId or jobId == "" then return false end
+	
+	local input = findJobIdInput()
+	
+	if input then
+		-- Paste the job ID
+		input.Text = jobId
+		print("✅ Pasted to Chilli:", jobId)
+		
+		-- Visual feedback
+		pcall(function()
+			local originalColor = input.BackgroundColor3
+			input.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+			task.wait(0.3)
+			input.BackgroundColor3 = originalColor
+		end)
+		
+		-- Auto-click join if enabled
+		if Settings.AutoClickJoin then
+			task.wait(0.3)
+			local button = findJoinButton()
+			
+			if button then
+				print("🔘 Clicking join button...")
+				pcall(function()
+					-- Multiple click methods
+					for _, conn in pairs(getconnections(button.MouseButton1Click)) do
+						conn:Fire()
+					end
+					button.MouseButton1Click:Fire()
+					
+					-- Simulate actual mouse click
+					local VirtualInputManager = game:GetService("VirtualInputManager")
+					local pos = button.AbsolutePosition
+					local size = button.AbsoluteSize
+					VirtualInputManager:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, true, button, 0)
+					VirtualInputManager:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, false, button, 0)
+				end)
+				print("✅ Clicked join button")
+			end
+		end
+		
+		return true
+	else
+		print("❌ Chilli Job ID input not found")
+		print("💡 Make sure Chilli Hub is open on Server Tools tab")
+		return false
+	end
+end
+
+-- FUNCTION TO FETCH JOBS FROM DESKTOP SERVER
+local function fetchJobs()
+	local success, result = pcall(function()
+		return game:HttpGet(SERVER_URL .. "/jobs", true)
+	end)
+	
+	if success and result then
+		local decodeSuccess, data = pcall(function()
+			return HttpService:JSONDecode(result)
+		end)
+		
+		if decodeSuccess and data then
+			isConnected = true
+			
+			if data.jobs and #data.jobs > 0 then
+				local latestJob = data.jobs[1]
+				
+				if latestJob and latestJob.jobId and latestJob.jobId ~= lastJobId then
+					lastJobId = latestJob.jobId
+					
+					print("")
+					print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+					print("🔥 NEW JOB DETECTED:", latestJob.name)
+					print("💰 Money:", latestJob.money)
+					print("👥 Players:", latestJob.players)
+					print("🔑 Job ID:", latestJob.jobId)
+					print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+					
+					-- Auto-paste to Chilli
+					if Settings.AutoPaste then
+						task.wait(0.5)
+						local success = pasteToChilli(latestJob.jobId, latestJob.name)
+						
+						if success then
+							print("✅ Successfully sent to Chilli!")
+						else
+							print("❌ Failed to send to Chilli")
+						end
+						print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+					end
+				end
+			end
+			
+			connectionAttempts = 0
+		end
+	else
+		connectionAttempts = connectionAttempts + 1
+		isConnected = false
+		
+		if connectionAttempts == 1 then
+			warn("⚠️ Cannot connect to desktop server")
+			warn("💡 Make sure nexa_monitor_server.py is running on port 8080")
+		end
+	end
+end
+
+-- MANUAL COMMAND TO TEST
+_G.TestChilliPaste = function(jobId)
+	jobId = jobId or "test-job-12345"
+	print("\n🧪 TESTING CHILLI PASTE...")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	
+	local chilliGui = findChilliHub()
+	if chilliGui then
+		print("✅ Found Chilli GUI:", chilliGui.Name)
+	else
+		print("❌ Chilli GUI not found")
+		print("💡 Make sure Chilli Hub is open")
+		return
+	end
+	
+	local input = findJobIdInput()
+	if input then
+		print("✅ Found Job ID input:", input:GetFullName())
+		print("   Placeholder:", input.PlaceholderText or "none")
+	else
+		print("❌ Job ID input not found")
+		print("💡 Make sure you're on the Server Tools tab")
+		return
+	end
+	
+	local button = findJoinButton()
+	if button then
+		print("✅ Found Join button:", button.Text)
+	else
+		print("⚠️ Join button not found (will paste but not auto-click)")
+	end
+	
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("📤 Attempting to paste:", jobId)
+	
+	local success = pasteToChilli(jobId, "Test Job")
+	
+	if success then
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		print("✅ TEST SUCCESSFUL!")
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	else
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		print("❌ TEST FAILED")
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	end
+end
+
+-- COMMAND TO FIND CHILLI ELEMENTS
+_G.FindChilliElements = function()
+	print("\n🔍 SEARCHING FOR CHILLI ELEMENTS...")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	
+	local chilliGui = findChilliHub()
+	if chilliGui then
+		print("✅ Chilli GUI:", chilliGui.Name)
+		print("   Type:", chilliGui.ClassName)
+	else
+		print("❌ Chilli GUI not found")
+	end
+	
+	local input = findJobIdInput()
+	if input then
+		print("✅ Job ID Input:", input:GetFullName())
+	else
+		print("❌ Job ID input not found")
+	end
+	
+	local button = findJoinButton()
+	if button then
+		print("✅ Join Button:", button:GetFullName())
+	else
+		print("❌ Join button not found")
+	end
+	
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+end
+
+-- Toggle settings
+_G.ToggleAutoPaste = function()
+	Settings.AutoPaste = not Settings.AutoPaste
+	print("Auto-Paste:", Settings.AutoPaste and "ON ✅" or "OFF ❌")
+end
+
+_G.ToggleAutoClick = function()
+	Settings.AutoClickJoin = not Settings.AutoClickJoin
+	print("Auto-Click Join:", Settings.AutoClickJoin and "ON ✅" or "OFF ❌")
+end
+
+-- Main update loop (only if server is accessible)
+task.spawn(function()
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("✅ NEXA → CHILLI BRIDGE LOADED!")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("📋 MANUAL COMMANDS:")
+	print("  _G.TestChilliPaste('job-id') - Test paste")
+	print("  _G.FindChilliElements() - Find Chilli GUI")
+	print("  _G.ToggleAutoPaste() - Toggle auto-paste")
+	print("  _G.ToggleAutoClick() - Toggle auto-click")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("⚙️ Auto-Paste:", Settings.AutoPaste and "ON ✅" or "OFF ❌")
+	print("⚙️ Auto-Click:", Settings.AutoClickJoin and "ON ✅" or "OFF ❌")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("💡 To test without server, type:")
+	print("   _G.TestChilliPaste()")
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	
+	task.wait(2)
+	
+	-- Try to connect to server
+	while true do
+		fetchJobs()
+		task.wait(UPDATE_INTERVAL)
+	end
+end)
