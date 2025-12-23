@@ -1,114 +1,113 @@
--- Nexa Brain Rot Duper (CLIENT VISUAL ONLY)
--- Actually works with MOVED models
+-- NEXA → CHILLI ULTRA SIMPLE
+-- Finds textbox in "Chilli Hub Premium" GUI
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
-local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "NexaBrainRotDuper"
-gui.ResetOnSpawn = false
+local playerGui = player:WaitForChild("PlayerGui")
 
-local dupeEnabled = false
-local savedPositions = {}
-local fakeDupes = {}
+print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("🔗 NEXA → CHILLI (By GUI Name)")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
-------------------------------------------------
--- UI
-------------------------------------------------
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.fromOffset(260,150)
-frame.Position = UDim2.fromOffset(50,300)
-frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
-frame.Active = true
-frame.Draggable = true
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,40)
-title.Text = "Nexa Brain Rot Duper"
-title.TextColor3 = Color3.new(1,1,1)
-title.BackgroundTransparency = 1
-title.Font = Enum.Font.GothamBold
-title.TextScaled = true
-
-local toggle = Instance.new("TextButton", frame)
-toggle.Position = UDim2.fromOffset(20,50)
-toggle.Size = UDim2.fromOffset(220,35)
-toggle.Text = "Dupe: OFF"
-toggle.Font = Enum.Font.GothamBold
-toggle.TextScaled = true
-toggle.BackgroundColor3 = Color3.fromRGB(160,60,60)
-toggle.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", toggle)
-
-local clear = Instance.new("TextButton", frame)
-clear.Position = UDim2.fromOffset(20,95)
-clear.Size = UDim2.fromOffset(220,30)
-clear.Text = "Clear Dupes"
-clear.Font = Enum.Font.Gotham
-clear.TextScaled = true
-clear.BackgroundColor3 = Color3.fromRGB(60,60,60)
-clear.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", clear)
-
-toggle.MouseButton1Click:Connect(function()
-	dupeEnabled = not dupeEnabled
-	toggle.Text = dupeEnabled and "Dupe: ON" or "Dupe: OFF"
-	toggle.BackgroundColor3 = dupeEnabled and Color3.fromRGB(60,160,60) or Color3.fromRGB(160,60,60)
-end)
-
-clear.MouseButton1Click:Connect(function()
-	for _,v in ipairs(fakeDupes) do
-		if v and v.Parent then v:Destroy() end
+-- Find Chilli by looking for GUI with "Chilli" in the name
+local function findChilliGui()
+	print("🔍 Looking for Chilli Hub GUI...")
+	
+	for _, gui in pairs(playerGui:GetChildren()) do
+		local name = gui.Name
+		print("  Checking:", name)
+		
+		-- Check if name contains "Chilli"
+		if name:find("Chilli") or name:find("chilli") then
+			print("✅ FOUND CHILLI GUI:", name)
+			return gui
+		end
 	end
-	table.clear(fakeDupes)
-end)
-
-------------------------------------------------
--- CORE LOGIC (THIS IS THE FIX)
-------------------------------------------------
-local function watchBrainrot(brainrot)
-	if not brainrot:IsA("Model") then return end
-	if not brainrot.PrimaryPart then return end
-	if not brainrot.Name:lower():find("brain") then return end
-
-	-- Save initial position
-	savedPositions[brainrot] = brainrot.PrimaryPart.CFrame
-
-	brainrot.PrimaryPart:GetPropertyChangedSignal("CFrame"):Connect(function()
-		if not dupeEnabled then
-			savedPositions[brainrot] = brainrot.PrimaryPart.CFrame
-			return
-		end
-
-		local oldCF = savedPositions[brainrot]
-		if not oldCF then return end
-
-		-- Create fake copy at OLD spot
-		local clone = brainrot:Clone()
-		clone.Name = brainrot.Name .. "_FAKE"
-		clone.Parent = workspace
-
-		for _,p in ipairs(clone:GetDescendants()) do
-			if p:IsA("BasePart") then
-				p.Anchored = true
-				p.CanCollide = false
-				p.Transparency = 0.15
-			end
-		end
-
-		clone:SetPrimaryPartCFrame(oldCF)
-		table.insert(fakeDupes, clone)
-
-		-- Update saved position
-		savedPositions[brainrot] = brainrot.PrimaryPart.CFrame
-	end)
+	
+	print("❌ No GUI with 'Chilli' in name found")
+	return nil
 end
 
--- Watch existing
-for _,v in ipairs(workspace:GetDescendants()) do
-	watchBrainrot(v)
+-- Find the textbox in Chilli
+local function findJobIdInput()
+	local chilliGui = findChilliGui()
+	
+	if not chilliGui then 
+		print("❌ Chilli GUI not found")
+		return nil 
+	end
+	
+	print("\n🔍 Looking for textbox in Chilli...")
+	
+	-- Find ALL visible textboxes in this GUI
+	local textboxes = {}
+	for _, obj in pairs(chilliGui:GetDescendants()) do
+		if obj:IsA("TextBox") and obj.Visible then
+			table.insert(textboxes, obj)
+			print("📦 Found TextBox:")
+			print("   Path:", obj:GetFullName())
+			print("   Name:", obj.Name)
+			print("   Placeholder:", obj.PlaceholderText or "none")
+			print("   Visible:", obj.Visible)
+			print("")
+		end
+	end
+	
+	if #textboxes == 1 then
+		print("✅ Found exactly 1 textbox - using it!")
+		return textboxes[1]
+	elseif #textboxes > 1 then
+		print("⚠️ Found", #textboxes, "textboxes - using the first one")
+		return textboxes[1]
+	else
+		print("❌ No textboxes found in Chilli")
+		return nil
+	end
 end
 
--- Watch new
-workspace.DescendantAdded:Connect(watchBrainrot)
+-- PASTE FUNCTION
+local function pasteJobId(jobId)
+	print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	print("📤 ATTEMPTING TO PASTE:", jobId)
+	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+	
+	local textbox = findJobIdInput()
+	
+	if textbox then
+		-- Paste it!
+		textbox.Text = jobId
+		
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		print("✅ SUCCESS! PASTED TO CHILLI")
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+		
+		-- Green flash
+		pcall(function()
+			local original = textbox.BackgroundColor3
+			textbox.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+			task.wait(0.5)
+			textbox.BackgroundColor3 = original
+		end)
+		
+		return true
+	else
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		print("❌ FAILED TO PASTE")
+		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+		return false
+	end
+end
+
+-- GLOBAL TEST FUNCTION
+_G.NexaTest = function(jobId)
+	jobId = jobId or "test-job-12345"
+	return pasteJobId(jobId)
+end
+
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("✅ NEXA BRIDGE LOADED!")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("📋 To test, click the green button")
+print("   or type: _G.NexaTest('job-id')")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
