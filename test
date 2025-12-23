@@ -1,112 +1,53 @@
--- NEXA → CHILLI ULTRA SIMPLE
--- Finds textbox in "Chilli Hub Premium" GUI
+-- NEXA CHILLI TEST BUTTON
+-- Creates a button to test the paste function
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🔗 NEXA → CHILLI (By GUI Name)")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+-- Create test GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NexaTestButton"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
 
--- Find Chilli by looking for GUI with "Chilli" in the name
-local function findChilliGui()
-	print("🔍 Looking for Chilli Hub GUI...")
+-- Test button
+local testButton = Instance.new("TextButton")
+testButton.Size = UDim2.new(0, 200, 0, 50)
+testButton.Position = UDim2.new(0.5, -100, 0.1, 0)
+testButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+testButton.Font = Enum.Font.GothamBold
+testButton.Text = "TEST PASTE TO CHILLI"
+testButton.TextColor3 = Color3.fromRGB(20, 20, 25)
+testButton.TextSize = 14
+testButton.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = testButton
+
+-- Click handler
+testButton.MouseButton1Click:Connect(function()
+	testButton.Text = "TESTING..."
+	testButton.BackgroundColor3 = Color3.fromRGB(255, 211, 61)
 	
-	for _, gui in pairs(playerGui:GetChildren()) do
-		local name = gui.Name
-		print("  Checking:", name)
+	task.wait(0.3)
+	
+	-- Call the test function
+	if _G.NexaTest then
+		_G.NexaTest("test-job-12345")
 		
-		-- Check if name contains "Chilli"
-		if name:find("Chilli") or name:find("chilli") then
-			print("✅ FOUND CHILLI GUI:", name)
-			return gui
-		end
-	end
-	
-	print("❌ No GUI with 'Chilli' in name found")
-	return nil
-end
-
--- Find the textbox in Chilli
-local function findJobIdInput()
-	local chilliGui = findChilliGui()
-	
-	if not chilliGui then 
-		print("❌ Chilli GUI not found")
-		return nil 
-	end
-	
-	print("\n🔍 Looking for textbox in Chilli...")
-	
-	-- Find ALL visible textboxes in this GUI
-	local textboxes = {}
-	for _, obj in pairs(chilliGui:GetDescendants()) do
-		if obj:IsA("TextBox") and obj.Visible then
-			table.insert(textboxes, obj)
-			print("📦 Found TextBox:")
-			print("   Path:", obj:GetFullName())
-			print("   Name:", obj.Name)
-			print("   Placeholder:", obj.PlaceholderText or "none")
-			print("   Visible:", obj.Visible)
-			print("")
-		end
-	end
-	
-	if #textboxes == 1 then
-		print("✅ Found exactly 1 textbox - using it!")
-		return textboxes[1]
-	elseif #textboxes > 1 then
-		print("⚠️ Found", #textboxes, "textboxes - using the first one")
-		return textboxes[1]
+		task.wait(1)
+		testButton.Text = "✅ TEST COMPLETE!"
+		testButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
 	else
-		print("❌ No textboxes found in Chilli")
-		return nil
+		testButton.Text = "❌ NEXA NOT LOADED"
+		testButton.BackgroundColor3 = Color3.fromRGB(255, 68, 68)
 	end
-end
-
--- PASTE FUNCTION
-local function pasteJobId(jobId)
-	print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	print("📤 ATTEMPTING TO PASTE:", jobId)
-	print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 	
-	local textbox = findJobIdInput()
-	
-	if textbox then
-		-- Paste it!
-		textbox.Text = jobId
-		
-		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-		print("✅ SUCCESS! PASTED TO CHILLI")
-		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-		
-		-- Green flash
-		pcall(function()
-			local original = textbox.BackgroundColor3
-			textbox.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
-			task.wait(0.5)
-			textbox.BackgroundColor3 = original
-		end)
-		
-		return true
-	else
-		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-		print("❌ FAILED TO PASTE")
-		print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-		return false
-	end
-end
+	task.wait(2)
+	testButton.Text = "TEST PASTE TO CHILLI"
+	testButton.BackgroundColor3 = Color3.fromRGB(0, 255, 136)
+end)
 
--- GLOBAL TEST FUNCTION
-_G.NexaTest = function(jobId)
-	jobId = jobId or "test-job-12345"
-	return pasteJobId(jobId)
-end
-
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("✅ NEXA BRIDGE LOADED!")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("📋 To test, click the green button")
-print("   or type: _G.NexaTest('job-id')")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+print("✅ Test button created! Click the green button at the top of your screen")
