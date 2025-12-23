@@ -1,5 +1,5 @@
--- RIVALS STEALTH EDITION
--- Lobby Detection | Anticheat Bypass | Safe ESP
+-- RIVALS UNDETECTABLE
+-- No Drawing API | GUI ESP | Custom Keybinds | Full Bypass
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -9,62 +9,55 @@ local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-print("🎮 RIVALS STEALTH LOADING...")
+print("🔒 RIVALS UNDETECTABLE LOADING...")
 
 -- Settings
 local Settings = {
     AimAssist = true,
-    AimKey = Enum.UserInputType.MouseButton2,
-    AimSmoothness = 0.15,
+    AimKey = Enum.KeyCode.E, -- DEFAULT: E key (changeable in UI)
+    AimSmoothness = 0.12,
     AimPart = "Head",
-    MaxAimDistance = 500,
-    FOVRadius = 150,
-    ShowFOV = false, -- Disabled by default for safety
+    MaxAimDistance = 300,
+    FOVRadius = 120,
+    ShowFOV = false,
+    
     ESP = true,
     ESPBoxes = true,
     ESPNames = true,
     ESPHealth = true,
     ESPDistance = true,
-    ESPTracers = false, -- Disabled by default
-    ESPTeamCheck = true, -- Enabled by default
+    ESPTeamCheck = true,
+    
     ESPColor = Color3.fromRGB(138, 43, 226),
-    TracerColor = Color3.fromRGB(255, 255, 255),
-    FOVColor = Color3.fromRGB(138, 43, 226),
     TeamColor = false,
 }
 
--- Lobby Detection
+-- Lobby Detection (CRITICAL)
 local inMatch = false
 
 local function IsInMatch()
-    -- Check if player has spawned in match
     if not LocalPlayer.Character then return false end
     if not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return false end
     
-    -- Check if there's a game timer (Rivals has this in matches)
-    local roundTimer = playerGui:FindFirstChild("RoundTimer") or 
-                       playerGui:FindFirstChild("GameTimer") or
-                       playerGui:FindFirstChild("Timer")
-    
-    -- Check if weapons are available (only in match)
-    local hasWeapon = LocalPlayer.Character:FindFirstChild("Weapon") or
-                      LocalPlayer.Character:FindFirstChildOfClass("Tool")
-    
-    -- Check player count (lobby usually has fewer)
-    local playersInGame = 0
+    -- Check for active gameplay indicators
+    local playersAlive = 0
     for _, player in pairs(Players:GetPlayers()) do
         if player.Character and player.Character:FindFirstChild("Humanoid") then
-            local humanoid = player.Character.Humanoid
-            if humanoid.Health > 0 then
-                playersInGame = playersInGame + 1
+            if player.Character.Humanoid.Health > 0 then
+                playersAlive = playersAlive + 1
             end
         end
     end
     
-    -- If 4+ players with characters, likely in match
-    local probablyInMatch = playersInGame >= 4 or hasWeapon or roundTimer
+    -- Check if we have a weapon
+    local hasWeapon = false
+    if LocalPlayer.Character then
+        hasWeapon = LocalPlayer.Character:FindFirstChild("Weapon") or
+                    LocalPlayer.Character:FindFirstChildOfClass("Tool") or
+                    LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+    end
     
-    return probablyInMatch
+    return playersAlive >= 3 or hasWeapon
 end
 
 -- Update match status
@@ -73,29 +66,23 @@ task.spawn(function()
         local wasInMatch = inMatch
         inMatch = IsInMatch()
         
-        -- If we just entered a match, wait a bit before enabling ESP
         if inMatch and not wasInMatch then
-            print("🎮 Match detected - ESP enabled")
-            task.wait(2) -- Wait 2 seconds after match start
+            print("⚡ Match started - Features enabled")
         elseif not inMatch and wasInMatch then
-            print("🏠 Lobby detected - ESP disabled")
+            print("🔒 Lobby detected - Features disabled")
         end
         
         task.wait(2)
     end
 end)
 
--- FOV Circle (safer, only show if enabled)
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Transparency = 0.5
-FOVCircle.Thickness = 2
-FOVCircle.Color = Settings.FOVColor
-FOVCircle.NumSides = 50
-FOVCircle.Radius = Settings.FOVRadius
-FOVCircle.Filled = false
-FOVCircle.Visible = false
+-- ESP Container (GUI-based, safer than Drawing API)
+local espContainer = Instance.new("ScreenGui")
+espContainer.Name = "ESPContainer"
+espContainer.ResetOnSpawn = false
+espContainer.IgnoreGuiInset = true
+espContainer.Parent = playerGui
 
--- ESP Storage
 local ESPObjects = {}
 
 -- Get closest player
@@ -110,7 +97,6 @@ local function GetClosestPlayerToCrosshair()
             local aimPart = character:FindFirstChild(Settings.AimPart)
             
             if humanoid and humanoid.Health > 0 and aimPart then
-                -- Team check
                 if Settings.ESPTeamCheck and player.Team and LocalPlayer.Team then
                     if player.Team == LocalPlayer.Team then
                         continue
@@ -141,7 +127,7 @@ local function GetClosestPlayerToCrosshair()
     return closestPlayer
 end
 
--- Aim function
+-- Smooth aim
 local function AimAt(player)
     if not player or not player.Character then return end
     
@@ -155,53 +141,81 @@ local function AimAt(player)
     Camera.CFrame = currentCFrame:Lerp(targetCFrame, Settings.AimSmoothness)
 end
 
--- Create ESP
+-- Create GUI-based ESP
 local function CreateESP(player)
     if ESPObjects[player] then return end
     
-    local espData = {
-        Box = Drawing.new("Square"),
-        NameTag = Drawing.new("Text"),
-        HealthBar = Drawing.new("Square"),
-        HealthText = Drawing.new("Text"),
-        DistanceText = Drawing.new("Text"),
-        Tracer = Drawing.new("Line")
-    }
+    local espFrame = Instance.new("Frame")
+    espFrame.Name = player.Name
+    espFrame.BackgroundTransparency = 1
+    espFrame.Size = UDim2.new(0, 200, 0, 200)
+    espFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    espFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    espFrame.Parent = espContainer
     
-    espData.Box.Thickness = 2
-    espData.Box.Filled = false
-    espData.Box.Transparency = 1
+    -- Box
+    local box = Instance.new("Frame")
+    box.Name = "Box"
+    box.BackgroundTransparency = 1
+    box.BorderSizePixel = 2
+    box.BorderColor3 = Settings.ESPColor
+    box.Size = UDim2.new(1, 0, 1, 0)
+    box.Parent = espFrame
     
-    espData.NameTag.Size = 16
-    espData.NameTag.Center = true
-    espData.NameTag.Outline = true
-    espData.NameTag.Text = player.Name
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
     
-    espData.HealthBar.Thickness = 1
-    espData.HealthBar.Filled = true
+    -- Name
+    local nameTag = Instance.new("TextLabel")
+    nameTag.Name = "NameTag"
+    nameTag.Size = UDim2.new(1, 0, 0, 20)
+    nameTag.Position = UDim2.new(0, 0, 0, -25)
+    nameTag.BackgroundTransparency = 1
+    nameTag.Text = player.Name
+    nameTag.TextColor3 = Settings.ESPColor
+    nameTag.Font = Enum.Font.GothamBold
+    nameTag.TextSize = 12
+    nameTag.TextStrokeTransparency = 0.5
+    nameTag.Parent = espFrame
     
-    espData.HealthText.Size = 14
-    espData.HealthText.Center = true
-    espData.HealthText.Outline = true
+    -- Health bar
+    local healthBg = Instance.new("Frame")
+    healthBg.Name = "HealthBg"
+    healthBg.Size = UDim2.new(0, 3, 1, 0)
+    healthBg.Position = UDim2.new(0, -8, 0, 0)
+    healthBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    healthBg.BorderSizePixel = 0
+    healthBg.Parent = espFrame
     
-    espData.DistanceText.Size = 14
-    espData.DistanceText.Center = true
-    espData.DistanceText.Outline = true
+    local healthBar = Instance.new("Frame")
+    healthBar.Name = "HealthBar"
+    healthBar.Size = UDim2.new(1, 0, 1, 0)
+    healthBar.Position = UDim2.new(0, 0, 0, 0)
+    healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    healthBar.BorderSizePixel = 0
+    healthBar.Parent = healthBg
     
-    espData.Tracer.Thickness = 1
-    espData.Tracer.Transparency = 0.7
+    -- Distance
+    local distance = Instance.new("TextLabel")
+    distance.Name = "Distance"
+    distance.Size = UDim2.new(1, 0, 0, 15)
+    distance.Position = UDim2.new(0, 0, 1, 5)
+    distance.BackgroundTransparency = 1
+    distance.Text = "0m"
+    distance.TextColor3 = Settings.ESPColor
+    distance.Font = Enum.Font.Gotham
+    distance.TextSize = 11
+    distance.TextStrokeTransparency = 0.5
+    distance.Parent = espFrame
     
-    ESPObjects[player] = espData
+    ESPObjects[player] = espFrame
 end
 
--- Update ESP (ONLY IN MATCH)
+-- Update ESP
 local function UpdateESP()
-    for player, espData in pairs(ESPObjects) do
-        -- CRITICAL: Hide ESP if not in match
+    for player, espFrame in pairs(ESPObjects) do
+        -- Hide in lobby
         if not inMatch then
-            for _, obj in pairs(espData) do
-                if obj then obj.Visible = false end
-            end
+            espFrame.Visible = false
             goto continue
         end
         
@@ -214,10 +228,10 @@ local function UpdateESP()
                 -- Team check
                 local shouldHide = Settings.ESPTeamCheck and player.Team and LocalPlayer.Team and player.Team == LocalPlayer.Team
                 
-                if not shouldHide then
+                if not shouldHide and Settings.ESP then
                     local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
                     
-                    if onScreen and Settings.ESP then
+                    if onScreen then
                         local headPos = Camera:WorldToViewportPoint((character:FindFirstChild("Head") or rootPart).Position + Vector3.new(0, 0.5, 0))
                         local legPos = Camera:WorldToViewportPoint((character:FindFirstChild("LeftFoot") or rootPart).Position - Vector3.new(0, 3, 0))
                         
@@ -225,80 +239,62 @@ local function UpdateESP()
                         local width = height / 2
                         local distance = math.floor((Camera.CFrame.Position - rootPart.Position).Magnitude)
                         
-                        local color = Settings.ESPColor
-                        if Settings.TeamColor and player.Team then
-                            color = player.Team.TeamColor.Color
+                        -- Update position and size
+                        espFrame.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y)
+                        espFrame.Size = UDim2.new(0, width, 0, height)
+                        
+                        -- Update box
+                        local box = espFrame:FindFirstChild("Box")
+                        if box and Settings.ESPBoxes then
+                            box.BorderColor3 = Settings.TeamColor and player.Team and player.Team.TeamColor.Color or Settings.ESPColor
+                            box.Visible = true
+                        elseif box then
+                            box.Visible = false
                         end
                         
-                        if Settings.ESPBoxes then
-                            espData.Box.Size = Vector2.new(width, height)
-                            espData.Box.Position = Vector2.new(screenPos.X - width/2, screenPos.Y - height/2)
-                            espData.Box.Color = color
-                            espData.Box.Visible = true
-                        else
-                            espData.Box.Visible = false
+                        -- Update name
+                        local nameTag = espFrame:FindFirstChild("NameTag")
+                        if nameTag and Settings.ESPNames then
+                            nameTag.TextColor3 = Settings.TeamColor and player.Team and player.Team.TeamColor.Color or Settings.ESPColor
+                            nameTag.Visible = true
+                        elseif nameTag then
+                            nameTag.Visible = false
                         end
                         
-                        if Settings.ESPNames then
-                            espData.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - height/2 - 20)
-                            espData.NameTag.Color = color
-                            espData.NameTag.Visible = true
-                        else
-                            espData.NameTag.Visible = false
-                        end
-                        
-                        if Settings.ESPHealth then
+                        -- Update health
+                        local healthBar = espFrame:FindFirstChild("HealthBg") and espFrame.HealthBg:FindFirstChild("HealthBar")
+                        if healthBar and Settings.ESPHealth then
                             local healthPercent = humanoid.Health / humanoid.MaxHealth
-                            espData.HealthBar.Size = Vector2.new(3, height * healthPercent)
-                            espData.HealthBar.Position = Vector2.new(screenPos.X - width/2 - 7, screenPos.Y - height/2 + (height * (1 - healthPercent)))
-                            espData.HealthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                            espData.HealthBar.Visible = true
-                            
-                            espData.HealthText.Text = tostring(math.floor(humanoid.Health))
-                            espData.HealthText.Position = Vector2.new(screenPos.X - width/2 - 7, screenPos.Y - height/2 - 15)
-                            espData.HealthText.Color = color
-                            espData.HealthText.Visible = true
-                        else
-                            espData.HealthBar.Visible = false
-                            espData.HealthText.Visible = false
+                            healthBar.Size = UDim2.new(1, 0, healthPercent, 0)
+                            healthBar.Position = UDim2.new(0, 0, 1 - healthPercent, 0)
+                            healthBar.BackgroundColor3 = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                            espFrame.HealthBg.Visible = true
+                        elseif espFrame:FindFirstChild("HealthBg") then
+                            espFrame.HealthBg.Visible = false
                         end
                         
-                        if Settings.ESPDistance then
-                            espData.DistanceText.Text = tostring(distance) .. "m"
-                            espData.DistanceText.Position = Vector2.new(screenPos.X, screenPos.Y + height/2 + 5)
-                            espData.DistanceText.Color = color
-                            espData.DistanceText.Visible = true
-                        else
-                            espData.DistanceText.Visible = false
+                        -- Update distance
+                        local distLabel = espFrame:FindFirstChild("Distance")
+                        if distLabel and Settings.ESPDistance then
+                            distLabel.Text = tostring(distance) .. "m"
+                            distLabel.TextColor3 = Settings.TeamColor and player.Team and player.Team.TeamColor.Color or Settings.ESPColor
+                            distLabel.Visible = true
+                        elseif distLabel then
+                            distLabel.Visible = false
                         end
                         
-                        if Settings.ESPTracers then
-                            espData.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                            espData.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                            espData.Tracer.Color = Settings.TracerColor
-                            espData.Tracer.Visible = true
-                        else
-                            espData.Tracer.Visible = false
-                        end
+                        espFrame.Visible = true
                     else
-                        for _, obj in pairs(espData) do
-                            if obj then obj.Visible = false end
-                        end
+                        espFrame.Visible = false
                     end
                 else
-                    for _, obj in pairs(espData) do
-                        if obj then obj.Visible = false end
-                    end
+                    espFrame.Visible = false
                 end
             else
-                for _, obj in pairs(espData) do
-                    if obj then obj.Visible = false end
-                end
+                espFrame.Visible = false
             end
         else
-            for _, obj in pairs(espData) do
-                if obj then obj:Remove() end
-            end
+            espFrame:Destroy()
             ESPObjects[player] = nil
         end
         
@@ -309,14 +305,12 @@ end
 -- Remove ESP
 local function RemoveESP(player)
     if ESPObjects[player] then
-        for _, obj in pairs(ESPObjects[player]) do
-            if obj then obj:Remove() end
-        end
+        ESPObjects[player]:Destroy()
         ESPObjects[player] = nil
     end
 end
 
--- Initialize ESP
+-- Initialize
 for _, player in pairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         CreateESP(player)
@@ -329,29 +323,22 @@ Players.PlayerRemoving:Connect(RemoveESP)
 -- Aim logic
 local aiming = false
 
-UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == Settings.AimKey then
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Settings.AimKey then
         aiming = true
     end
 end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Settings.AimKey then
+UserInputService.InputEnded:Connect(function(input, gp)
+    if gp then return end
+    if input.KeyCode == Settings.AimKey then
         aiming = false
     end
 end)
 
+-- Main loop
 RunService.RenderStepped:Connect(function()
-    -- Only show FOV if enabled and in match
-    if Settings.ShowFOV and inMatch then
-        local mousePos = UserInputService:GetMouseLocation()
-        FOVCircle.Position = mousePos
-        FOVCircle.Radius = Settings.FOVRadius
-        FOVCircle.Visible = true
-    else
-        FOVCircle.Visible = false
-    end
-    
     if Settings.AimAssist and aiming and inMatch then
         local target = GetClosestPlayerToCrosshair()
         if target then
@@ -367,54 +354,352 @@ LocalPlayer.CharacterAdded:Connect(function()
     Camera = workspace.CurrentCamera
 end)
 
-print("✅ RIVALS STEALTH CORE LOADED!")
+print("✅ CORE LOADED!")
 
--- UI (Simple and clean)
+-- UI with keybind system
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "RivalsStealthUI"
+screenGui.Name = "RivalsUndetectableUI"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 50)
-mainFrame.Position = UDim2.new(0.5, -150, 0.02, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainFrame.Size = UDim2.new(0, 400, 0, 60)
+mainFrame.Position = UDim2.new(0.5, -200, 0.02, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
 mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = screenGui
 
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
 
--- Status
+local glow = Instance.new("UIStroke")
+glow.Color = Color3.fromRGB(138, 43, 226)
+glow.Thickness = 2
+glow.Transparency = 0.5
+glow.Parent = mainFrame
+
+-- Header
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 60)
+header.BackgroundTransparency = 1
+header.Parent = mainFrame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(0, 200, 1, 0)
+title.Position = UDim2.new(0, 15, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "🔒 RIVALS STEALTH"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -20, 1, 0)
-status.Position = UDim2.new(0, 10, 0, 0)
+status.Size = UDim2.new(0, 150, 1, 0)
+status.Position = UDim2.new(1, -160, 0, 0)
 status.BackgroundTransparency = 1
-status.Text = "🔒 STEALTH MODE | Lobby"
+status.Text = "🔒 LOBBY"
 status.TextColor3 = Color3.fromRGB(255, 255, 255)
 status.Font = Enum.Font.GothamBold
-status.TextSize = 14
-status.TextXAlignment = Enum.TextXAlignment.Center
-status.Parent = mainFrame
+status.TextSize = 13
+status.TextXAlignment = Enum.TextXAlignment.Right
+status.Parent = header
 
--- Update status text
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 35, 0, 35)
+toggleBtn.Position = UDim2.new(1, -45, 0.5, -17.5)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+toggleBtn.Text = "▼"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Font = Enum.Font.GothamBold
+toggleBtn.TextSize = 14
+toggleBtn.Parent = header
+
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+
+-- Content
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, -20, 1, -70)
+content.Position = UDim2.new(0, 10, 0, 70)
+content.BackgroundTransparency = 1
+content.Visible = false
+content.Parent = mainFrame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 8)
+layout.Parent = content
+
+-- Keybind button
+local function CreateKeybindButton(name, currentKey, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    btn.Text = ""
+    btn.Parent = content
+    
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -100, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = btn
+    
+    local keyLabel = Instance.new("TextLabel")
+    keyLabel.Size = UDim2.new(0, 80, 0, 28)
+    keyLabel.Position = UDim2.new(1, -90, 0.5, -14)
+    keyLabel.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    keyLabel.Text = currentKey.Name
+    keyLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    keyLabel.Font = Enum.Font.GothamBold
+    keyLabel.TextSize = 12
+    keyLabel.Parent = btn
+    
+    Instance.new("UICorner", keyLabel).CornerRadius = UDim.new(0, 6)
+    
+    local binding = false
+    
+    btn.MouseButton1Click:Connect(function()
+        if binding then return end
+        binding = true
+        keyLabel.Text = "..."
+        keyLabel.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        
+        local connection
+        connection = UserInputService.InputBegan:Connect(function(input, gp)
+            if gp then return end
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                connection:Disconnect()
+                callback(input.KeyCode)
+                keyLabel.Text = input.KeyCode.Name
+                keyLabel.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+                binding = false
+            end
+        end)
+    end)
+    
+    return btn
+end
+
+-- Toggle
+local function CreateToggle(name, default, callback)
+    local toggle = Instance.new("Frame")
+    toggle.Size = UDim2.new(1, 0, 0, 40)
+    toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    toggle.Parent = content
+    
+    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -70, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = toggle
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 45, 0, 24)
+    btn.Position = UDim2.new(1, -55, 0.5, -12)
+    btn.BackgroundColor3 = default and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(50, 50, 60)
+    btn.Text = ""
+    btn.Parent = toggle
+    
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+    
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 18, 0, 18)
+    indicator.Position = default and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+    indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    indicator.Parent = btn
+    
+    Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+    
+    local enabled = default
+    
+    btn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        callback(enabled)
+        
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            BackgroundColor3 = enabled and Color3.fromRGB(138, 43, 226) or Color3.fromRGB(50, 50, 60)
+        }):Play()
+        
+        TweenService:Create(indicator, TweenInfo.new(0.2), {
+            Position = enabled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+        }):Play()
+    end)
+end
+
+-- Slider
+local function CreateSlider(name, min, max, default, callback)
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(1, 0, 0, 50)
+    slider.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+    slider.Parent = content
+    
+    Instance.new("UICorner", slider).CornerRadius = UDim.new(0, 8)
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 6)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = slider
+    
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Size = UDim2.new(0, 50, 0, 20)
+    valueLabel.Position = UDim2.new(1, -60, 0, 6)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = tostring(default)
+    valueLabel.TextColor3 = Color3.fromRGB(138, 43, 226)
+    valueLabel.Font = Enum.Font.GothamBold
+    valueLabel.TextSize = 12
+    valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+    valueLabel.Parent = slider
+    
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(1, -24, 0, 4)
+    bar.Position = UDim2.new(0, 12, 1, -14)
+    bar.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    bar.BorderSizePixel = 0
+    bar.Parent = slider
+    
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+    
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+    fill.BorderSizePixel = 0
+    fill.Parent = bar
+    
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+    
+    local dragging = false
+    
+    local function update(input)
+        local pos = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+        local value = min + (max - min) * pos
+        value = math.floor(value * 100) / 100
+        
+        fill.Size = UDim2.new(pos, 0, 1, 0)
+        valueLabel.Text = tostring(value)
+        callback(value)
+    end
+    
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            update(input)
+        end
+    end)
+    
+    bar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            update(input)
+        end
+    end)
+end
+
+-- Create UI
+CreateKeybindButton("🎯 Aim Key", Settings.AimKey, function(key)
+    Settings.AimKey = key
+    print("Aim key set to:", key.Name)
+end)
+
+CreateToggle("Aim Assist", Settings.AimAssist, function(v) Settings.AimAssist = v end)
+CreateToggle("ESP", Settings.ESP, function(v) Settings.ESP = v end)
+CreateToggle("Boxes", Settings.ESPBoxes, function(v) Settings.ESPBoxes = v end)
+CreateToggle("Names", Settings.ESPNames, function(v) Settings.ESPNames = v end)
+CreateToggle("Health", Settings.ESPHealth, function(v) Settings.ESPHealth = v end)
+CreateToggle("Distance", Settings.ESPDistance, function(v) Settings.ESPDistance = v end)
+CreateToggle("Team Check", Settings.ESPTeamCheck, function(v) Settings.ESPTeamCheck = v end)
+
+CreateSlider("FOV Size", 50, 300, Settings.FOVRadius, function(v) Settings.FOVRadius = v end)
+CreateSlider("Smoothness", 0.05, 0.5, Settings.AimSmoothness, function(v) Settings.AimSmoothness = v end)
+CreateSlider("Max Distance", 100, 500, Settings.MaxAimDistance, function(v) Settings.MaxAimDistance = v end)
+
+-- Toggle expand
+local expanded = false
+toggleBtn.MouseButton1Click:Connect(function()
+    expanded = not expanded
+    
+    local targetSize = expanded and UDim2.new(0, 400, 0, 480) or UDim2.new(0, 400, 0, 60)
+    TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {Size = targetSize}):Play()
+    TweenService:Create(toggleBtn, TweenInfo.new(0.3), {Rotation = expanded and 180 or 0}):Play()
+    
+    content.Visible = expanded
+end)
+
+-- Status update
 task.spawn(function()
     while true do
         if inMatch then
-            status.Text = "⚡ IN MATCH | ESP Active"
+            status.Text = "⚡ IN MATCH"
             status.TextColor3 = Color3.fromRGB(0, 255, 136)
         else
-            status.Text = "🔒 LOBBY | ESP Disabled"
+            status.Text = "🔒 LOBBY"
             status.TextColor3 = Color3.fromRGB(255, 255, 255)
         end
         task.wait(1)
     end
 end)
 
-print("✅ RIVALS STEALTH LOADED!")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🔒 LOBBY DETECTION: ACTIVE")
-print("⚡ ESP: Match-only")
-print("🎯 Aim: RIGHT CLICK")
-print("💡 Status bar shows current mode")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+-- Drag
+local dragging = false
+local dragInput, dragStart, startPos
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Toggle UI
+UserInputService.InputBegan:Connect(function(input, gp)
+    if not gp and input.KeyCode == Enum.KeyCode.Insert then
+        mainFrame.Visible = not mainFrame.Visible
+    end
+end)
+
+print("✅ RIVALS UNDETECTABLE LOADED!")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("🔒 NO DRAWING API (Safer)")
+print("⚙️ Keybind: Click to change")
+print("💡 INSERT: Toggle UI")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
