@@ -1,57 +1,78 @@
--- CHILLI GUI NAME FINDER
--- Shows the REAL internal name of Chilli Hub
+-- FIND CHILLI BY SERVER TOOLS FRAME
+-- Searches for the GUI containing Server Tools
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
 print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("🔍 FINDING CHILLI HUB'S REAL NAME")
+print("🔍 SEARCHING BY FRAME STRUCTURE")
 print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
 
-print("📋 ALL GUI NAMES IN PLAYERGUI:")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+-- Look for ANY GUI with a frame visible in center-left area
+print("Looking for GUIs with visible frames...")
 
 for _, gui in pairs(playerGui:GetChildren()) do
-    if gui:IsA("ScreenGui") then
-        print("GUI:", gui.Name)
+    if gui:IsA("ScreenGui") and gui.Enabled then
         
-        -- Check if it has any Frame with "Chilli" text
-        local hasChilli = false
-        for _, obj in pairs(gui:GetDescendants()) do
-            if obj:IsA("TextLabel") and obj.Text then
-                local text = obj.Text
-                if text:find("Chilli") or text:find("Premium") or text:find("Server Tools") then
-                    hasChilli = true
-                    print("  ⭐ CONTAINS TEXT:", text)
+        -- Look for frames that might be Chilli's main window
+        for _, frame in pairs(gui:GetDescendants()) do
+            if frame:IsA("Frame") and frame.Visible then
+                
+                -- Check size - Chilli's main frame is probably medium-sized
+                local size = frame.AbsoluteSize
+                if size.X > 300 and size.X < 600 and size.Y > 400 and size.Y < 700 then
+                    
+                    -- Check if it has textboxes (which Chilli does)
+                    local hasTextBox = false
+                    for _, child in pairs(frame:GetDescendants()) do
+                        if child:IsA("TextBox") then
+                            hasTextBox = true
+                            break
+                        end
+                    end
+                    
+                    if hasTextBox then
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        print("🎯 FOUND POTENTIAL CHILLI FRAME!")
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        print("Parent GUI:", gui.Name)
+                        print("Frame Name:", frame.Name)
+                        print("Frame Size:", size.X, "x", size.Y)
+                        print("Frame Path:", frame:GetFullName())
+                        print("")
+                        
+                        -- Find ALL textboxes in this frame
+                        print("📦 TEXTBOXES IN THIS FRAME:")
+                        for _, obj in pairs(frame:GetDescendants()) do
+                            if obj:IsA("TextBox") and obj.Visible then
+                                print("  ✅ TextBox:", obj.Name)
+                                print("     Full Path:", obj:GetFullName())
+                                print("     Placeholder:", obj.PlaceholderText or "none")
+                                print("     Parent:", obj.Parent and obj.Parent.Name or "none")
+                                print("")
+                            end
+                        end
+                        
+                        -- Find buttons
+                        print("🔘 BUTTONS IN THIS FRAME:")
+                        for _, obj in pairs(frame:GetDescendants()) do
+                            if obj:IsA("TextButton") and obj.Visible then
+                                print("  🔘 Button:", obj.Text or obj.Name)
+                                print("     Path:", obj:GetFullName())
+                                print("")
+                            end
+                        end
+                        
+                        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+                    end
                 end
             end
         end
-        
-        if hasChilli then
-            print("  🎯 THIS IS PROBABLY CHILLI HUB!")
-            print("  🎯 REAL GUI NAME:", gui.Name)
-            print("")
-            
-            -- Now find textboxes in this GUI
-            print("  📦 TEXTBOXES IN THIS GUI:")
-            for _, obj in pairs(gui:GetDescendants()) do
-                if obj:IsA("TextBox") then
-                    print("    - Found:", obj.Name)
-                    print("      Path:", obj:GetFullName())
-                    print("      Visible:", obj.Visible)
-                    print("")
-                end
-            end
-        end
-        print("")
     end
 end
 
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 print("✅ SEARCH COMPLETE!")
-print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-print("\n💡 Look for the line that says:")
-print("   '🎯 REAL GUI NAME: [something]'")
-print("\n📋 Copy that name and send it to me!\n")
+print("\n💡 Look for the frame that matches Chilli's window size")
+print("📋 Then tell me the GUI name and textbox path!\n")
 
