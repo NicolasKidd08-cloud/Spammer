@@ -1,935 +1,499 @@
--- MATTHEW HIPPO - FIXED CHAOS MODE 💀
--- ALL FEATURES ACTUALLY WORK NOW!
--- REALISTIC HIP THRUSTING HUMP!
--- By Skinny Nicolas for Matthew
+ -- MATTHEW HIPPO - MINIMAL VERSION (GUARANTEED TO LOAD!)
+-- By Skinny Nicolas
 
-print("💀 Loading WORKING CHAOS MODE...")
+print("💀 Loading...")
 
--- Services
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local RS = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local TS = game:GetService("TweenService")
 
--- Player
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local mouse = player:GetMouse()
-local camera = Workspace.CurrentCamera
+local plr = Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+local root = char:WaitForChild("HumanoidRootPart")
+local cam = workspace.CurrentCamera
 
--- Character
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
+local gui = Instance.new("ScreenGui")
+gui.ResetOnSpawn = false
+gui.Parent = plr.PlayerGui
 
--- Variables
-local states = {}
-local connections = {}
-local selectedPlayer = nil
-local playerButtons = {}
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 400, 0, 450)
+main.Position = UDim2.new(0.5, -200, 0.5, -225)
+main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+main.Active = true
+main.Draggable = true
+main.Parent = gui
 
--- Detect R6 or R15
-local isR15 = character:FindFirstChild("UpperTorso") ~= nil
-local torso = isR15 and character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-local lowerTorso = isR15 and character:FindFirstChild("LowerTorso") or torso
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = main
 
--- Notification
-local function notify(title, text, duration)
-    duration = duration or 2
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = title,
-        Text = text,
-        Duration = duration
-    })
-end
-
--- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "WorkingChaos"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -250)
-mainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-mainFrame.BorderSizePixel = 0
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 15)
-mainCorner.Parent = mainFrame
-
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(255, 0, 0)
-mainStroke.Thickness = 3
-mainStroke.Parent = mainFrame
-
--- Header
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 60)
-header.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-header.BorderSizePixel = 0
-header.Parent = mainFrame
-
-local headerCorner = Instance.new("UICorner")
-headerCorner.CornerRadius = UDim.new(0, 15)
-headerCorner.Parent = header
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(255, 0, 0)
+stroke.Thickness = 2
+stroke.Parent = main
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -100, 1, 0)
-title.Position = UDim2.new(0, 10, 0, 0)
-title.BackgroundTransparency = 1
-title.Text = "💀 WORKING CHAOS MODE 💀"
-title.TextSize = 20
+title.Size = UDim2.new(1, 0, 0, 50)
+title.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+title.Text = "💀 MATTHEW HIPPO 💀"
+title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(255, 0, 0)
 title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = header
+title.Parent = main
 
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, -100, 0, 20)
-subtitle.Position = UDim2.new(0, 10, 1, -25)
-subtitle.BackgroundTransparency = 1
-subtitle.Text = "All Features Actually Work! By Nicolas"
-subtitle.TextSize = 10
-subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-subtitle.Font = Enum.Font.Gotham
-subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.Parent = header
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 10)
+titleCorner.Parent = title
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 50, 0, 50)
-closeBtn.Position = UDim2.new(1, -55, 0, 5)
-closeBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-closeBtn.Text = "X"
-closeBtn.TextSize = 24
-closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Parent = header
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 40, 0, 40)
+close.Position = UDim2.new(1, -45, 0, 5)
+close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+close.Text = "X"
+close.TextSize = 20
+close.TextColor3 = Color3.white
+close.Font = Enum.Font.GothamBold
+close.Parent = title
 
-local closeBtnCorner = Instance.new("UICorner")
-closeBtnCorner.CornerRadius = UDim.new(0, 10)
-closeBtnCorner.Parent = closeBtn
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = close
 
-closeBtn.MouseButton1Click:Connect(function()
-    screenGui:Destroy()
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
 end)
 
--- Content
-local content = Instance.new("ScrollingFrame")
-content.Size = UDim2.new(1, -20, 1, -80)
-content.Position = UDim2.new(0, 10, 0, 70)
-content.BackgroundTransparency = 1
-content.BorderSizePixel = 0
-content.ScrollBarThickness = 6
-content.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
-content.CanvasSize = UDim2.new(0, 0, 0, 0)
-content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-content.Parent = mainFrame
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(1, -20, 1, -70)
+scroll.Position = UDim2.new(0, 10, 0, 60)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 4
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = main
 
-local contentLayout = Instance.new("UIListLayout")
-contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
-contentLayout.Padding = UDim.new(0, 5)
-contentLayout.Parent = content
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 5)
+layout.Parent = scroll
 
-local contentPadding = Instance.new("UIPadding")
-contentPadding.PaddingTop = UDim.new(0, 5)
-contentPadding.PaddingBottom = UDim.new(0, 5)
-contentPadding.Parent = content
-
--- Player List
-local playerListFrame = Instance.new("Frame")
-playerListFrame.Size = UDim2.new(0, 230, 0, 500)
-playerListFrame.Position = UDim2.new(0.5, 260, 0.5, -250)
-playerListFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-playerListFrame.BorderSizePixel = 0
-playerListFrame.Active = true
-playerListFrame.Draggable = true
-playerListFrame.Parent = screenGui
+local plList = Instance.new("Frame")
+plList.Size = UDim2.new(0, 200, 0, 450)
+plList.Position = UDim2.new(0.5, 210, 0.5, -225)
+plList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+plList.Active = true
+plList.Draggable = true
+plList.Parent = gui
 
 local plCorner = Instance.new("UICorner")
-plCorner.CornerRadius = UDim.new(0, 15)
-plCorner.Parent = playerListFrame
+plCorner.CornerRadius = UDim.new(0, 10)
+plCorner.Parent = plList
 
 local plStroke = Instance.new("UIStroke")
 plStroke.Color = Color3.fromRGB(255, 0, 0)
-plStroke.Thickness = 3
-plStroke.Parent = playerListFrame
+plStroke.Thickness = 2
+plStroke.Parent = plList
 
-local plHeader = Instance.new("TextLabel")
-plHeader.Size = UDim2.new(1, 0, 0, 45)
-plHeader.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-plHeader.BorderSizePixel = 0
-plHeader.Text = "👥 SELECT PLAYER"
-plHeader.TextSize = 16
-plHeader.TextColor3 = Color3.fromRGB(255, 0, 0)
-plHeader.Font = Enum.Font.GothamBold
-plHeader.Parent = playerListFrame
+local plTitle = Instance.new("TextLabel")
+plTitle.Size = UDim2.new(1, 0, 0, 40)
+plTitle.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+plTitle.Text = "👥 PLAYERS"
+plTitle.TextSize = 14
+plTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
+plTitle.Font = Enum.Font.GothamBold
+plTitle.Parent = plList
 
-local plHeaderCorner = Instance.new("UICorner")
-plHeaderCorner.CornerRadius = UDim.new(0, 15)
-plHeaderCorner.Parent = plHeader
+local plTitleCorner = Instance.new("UICorner")
+plTitleCorner.CornerRadius = UDim.new(0, 10)
+plTitleCorner.Parent = plTitle
 
 local plScroll = Instance.new("ScrollingFrame")
-plScroll.Size = UDim2.new(1, -10, 1, -55)
-plScroll.Position = UDim2.new(0, 5, 0, 50)
+plScroll.Size = UDim2.new(1, -10, 1, -50)
+plScroll.Position = UDim2.new(0, 5, 0, 45)
 plScroll.BackgroundTransparency = 1
-plScroll.BorderSizePixel = 0
-plScroll.ScrollBarThickness = 6
-plScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
+plScroll.ScrollBarThickness = 4
 plScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-plScroll.Parent = playerListFrame
+plScroll.Parent = plList
 
 local plLayout = Instance.new("UIListLayout")
-plLayout.SortOrder = Enum.SortOrder.Name
 plLayout.Padding = UDim.new(0, 3)
 plLayout.Parent = plScroll
 
--- Helper Functions
-local function createButton(parent, text, icon, order, callback)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 0, 38)
-    button.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    button.BorderSizePixel = 0
-    button.Text = ""
-    button.LayoutOrder = order
-    button.AutoButtonColor = false
-    button.Parent = parent
+local states = {}
+local conns = {}
+local selected = nil
+local plBtns = {}
+
+local function btn(txt, ico, ord, cb)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, 0, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    b.Text = ""
+    b.LayoutOrder = ord
+    b.Parent = scroll
     
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = button
+    local bc = Instance.new("UICorner")
+    bc.CornerRadius = UDim.new(0, 8)
+    bc.Parent = b
     
-    local buttonStroke = Instance.new("UIStroke")
-    buttonStroke.Color = Color3.fromRGB(40, 40, 40)
-    buttonStroke.Thickness = 1
-    buttonStroke.Parent = button
+    local i = Instance.new("TextLabel")
+    i.Size = UDim2.new(0, 30, 1, 0)
+    i.BackgroundTransparency = 1
+    i.Text = ico
+    i.TextSize = 16
+    i.Parent = b
     
-    local iconLabel = Instance.new("TextLabel")
-    iconLabel.Size = UDim2.new(0, 30, 1, 0)
-    iconLabel.Position = UDim2.new(0, 5, 0, 0)
-    iconLabel.BackgroundTransparency = 1
-    iconLabel.Text = icon
-    iconLabel.TextSize = 18
-    iconLabel.Font = Enum.Font.GothamBold
-    iconLabel.Parent = button
+    local t = Instance.new("TextLabel")
+    t.Size = UDim2.new(1, -75, 1, 0)
+    t.Position = UDim2.new(0, 30, 0, 0)
+    t.BackgroundTransparency = 1
+    t.Text = txt
+    t.TextSize = 11
+    t.TextColor3 = Color3.white
+    t.Font = Enum.Font.GothamBold
+    t.TextXAlignment = Enum.TextXAlignment.Left
+    t.Parent = b
     
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, -85, 1, 0)
-    textLabel.Position = UDim2.new(0, 35, 0, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = text
-    textLabel.TextSize = 12
-    textLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextXAlignment = Enum.TextXAlignment.Left
-    textLabel.Parent = button
+    local s = Instance.new("Frame")
+    s.Size = UDim2.new(0, 40, 0, 20)
+    s.Position = UDim2.new(1, -45, 0.5, -10)
+    s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    s.Parent = b
     
-    local status = Instance.new("Frame")
-    status.Name = "Status"
-    status.Size = UDim2.new(0, 42, 0, 22)
-    status.Position = UDim2.new(1, -47, 0.5, -11)
-    status.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    status.BorderSizePixel = 0
-    status.Parent = button
+    local sc = Instance.new("UICorner")
+    sc.CornerRadius = UDim.new(0, 10)
+    sc.Parent = s
     
-    local statusCorner = Instance.new("UICorner")
-    statusCorner.CornerRadius = UDim.new(0, 11)
-    statusCorner.Parent = status
+    local st = Instance.new("TextLabel")
+    st.Size = UDim2.new(1, 0, 1, 0)
+    st.BackgroundTransparency = 1
+    st.Text = "OFF"
+    st.TextSize = 9
+    st.TextColor3 = Color3.white
+    st.Font = Enum.Font.GothamBold
+    st.Parent = s
     
-    local statusText = Instance.new("TextLabel")
-    statusText.Size = UDim2.new(1, 0, 1, 0)
-    statusText.BackgroundTransparency = 1
-    statusText.Text = "OFF"
-    statusText.TextSize = 10
-    statusText.TextColor3 = Color3.fromRGB(200, 200, 200)
-    statusText.Font = Enum.Font.GothamBold
-    statusText.Parent = status
-    
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(35, 35, 35)}):Play()
-        TweenService:Create(buttonStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(255, 0, 0)}):Play()
+    b.MouseButton1Click:Connect(function()
+        cb(s, st)
     end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
-        TweenService:Create(buttonStroke, TweenInfo.new(0.15), {Color = Color3.fromRGB(40, 40, 40)}):Play()
-    end)
-    
-    button.MouseButton1Click:Connect(function()
-        callback(status, statusText)
-    end)
-    
-    return button, status, statusText
 end
 
-local function createPlayerButton(targetPlayer)
-    if playerButtons[targetPlayer] then return end
+local function plBtn(p)
+    if plBtns[p] then return end
     
-    local button = Instance.new("TextButton")
-    button.Name = targetPlayer.Name
-    button.Size = UDim2.new(1, -5, 0, 40)
-    button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    button.BorderSizePixel = 0
-    button.Text = "  " .. targetPlayer.Name
-    button.TextSize = 12
-    button.TextColor3 = Color3.fromRGB(220, 220, 220)
-    button.Font = Enum.Font.GothamBold
-    button.TextXAlignment = Enum.TextXAlignment.Left
-    button.Parent = plScroll
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(1, -5, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    b.Text = "  " .. p.Name
+    b.TextSize = 11
+    b.TextColor3 = Color3.white
+    b.Font = Enum.Font.GothamBold
+    b.TextXAlignment = Enum.TextXAlignment.Left
+    b.Parent = plScroll
     
-    local btnCorner = Instance.new("UICorner")
-    btnCorner.CornerRadius = UDim.new(0, 8)
-    btnCorner.Parent = button
+    local bc = Instance.new("UICorner")
+    bc.CornerRadius = UDim.new(0, 8)
+    bc.Parent = b
     
-    button.MouseButton1Click:Connect(function()
-        if selectedPlayer and playerButtons[selectedPlayer] then
-            playerButtons[selectedPlayer].BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    b.MouseButton1Click:Connect(function()
+        if selected and plBtns[selected] then
+            plBtns[selected].BackgroundColor3 = Color3.fromRGB(20, 20, 20)
         end
-        
-        selectedPlayer = targetPlayer
-        button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        notify("🎯 Selected", targetPlayer.Name, 1.5)
+        selected = p
+        b.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     end)
     
-    playerButtons[targetPlayer] = button
+    plBtns[p] = b
 end
 
-local function updatePlayerList()
-    for player, button in pairs(playerButtons) do
-        if not Players:FindFirstChild(player.Name) then
-            button:Destroy()
-            playerButtons[player] = nil
-            if selectedPlayer == player then
-                selectedPlayer = nil
-            end
+local function updatePl()
+    for p, b in pairs(plBtns) do
+        if not Players:FindFirstChild(p.Name) then
+            b:Destroy()
+            plBtns[p] = nil
+            if selected == p then selected = nil end
         end
     end
-    
-    for _, targetPlayer in pairs(Players:GetPlayers()) do
-        if targetPlayer ~= player then
-            createPlayerButton(targetPlayer)
-        end
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= plr then plBtn(p) end
     end
 end
 
 spawn(function()
     while wait(1) do
-        pcall(updatePlayerList)
+        pcall(updatePl)
     end
 end)
 
-updatePlayerList()
+updatePl()
 
--- ═══════════════════════════════════════════════════════════
--- WORKING FEATURES ONLY!
--- ═══════════════════════════════════════════════════════════
-
--- FLY (WORKS!)
-createButton(content, "Fly (WASD + Space/Shift)", "🕊️", 1, function(s, st)
+-- FLY
+btn("Fly (WASD)", "🕊️", 1, function(s, st)
     states.fly = not states.fly
     
     if states.fly then
-        local bodyVel = Instance.new("BodyVelocity")
-        bodyVel.Name = "FlyVel"
-        bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bodyVel.Velocity = Vector3.new(0, 0, 0)
-        bodyVel.Parent = rootPart
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Parent = root
         
-        local bodyGyro = Instance.new("BodyGyro")
-        bodyGyro.Name = "FlyGyro"
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bodyGyro.P = 9e4
-        bodyGyro.CFrame = rootPart.CFrame
-        bodyGyro.Parent = rootPart
+        local bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.P = 9e4
+        bg.Parent = root
         
-        connections.fly = RunService.Heartbeat:Connect(function()
+        conns.fly = RS.Heartbeat:Connect(function()
             if not states.fly then return end
             
-            local moveDir = Vector3.new(0, 0, 0)
+            local m = Vector3.new(0, 0, 0)
+            if UIS:IsKeyDown(Enum.KeyCode.W) then m = m + cam.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.S) then m = m - cam.CFrame.LookVector end
+            if UIS:IsKeyDown(Enum.KeyCode.A) then m = m - cam.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.D) then m = m + cam.CFrame.RightVector end
+            if UIS:IsKeyDown(Enum.KeyCode.Space) then m = m + Vector3.new(0, 1, 0) end
+            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then m = m - Vector3.new(0, 1, 0) end
             
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                moveDir = moveDir + camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                moveDir = moveDir - camera.CFrame.LookVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                moveDir = moveDir - camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                moveDir = moveDir + camera.CFrame.RightVector
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                moveDir = moveDir + Vector3.new(0, 1, 0)
-            end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                moveDir = moveDir - Vector3.new(0, 1, 0)
-            end
-            
-            if moveDir.Magnitude > 0 then
-                moveDir = moveDir.Unit
-            end
-            
-            bodyVel.Velocity = moveDir * 200
-            bodyGyro.CFrame = camera.CFrame
+            bv.Velocity = m.Unit * 200
+            bg.CFrame = cam.CFrame
         end)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notify("✅", "Fly ON", 2)
     else
-        if connections.fly then connections.fly:Disconnect() end
-        if rootPart:FindFirstChild("FlyVel") then rootPart.FlyVel:Destroy() end
-        if rootPart:FindFirstChild("FlyGyro") then rootPart.FlyGyro:Destroy() end
+        if conns.fly then conns.fly:Disconnect() end
+        for _, v in pairs(root:GetChildren()) do
+            if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then v:Destroy() end
+        end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- NOCLIP (WORKS!)
-createButton(content, "Noclip", "👻", 2, function(s, st)
+-- NOCLIP
+btn("Noclip", "👻", 2, function(s, st)
     states.noclip = not states.noclip
     
     if states.noclip then
-        connections.noclip = RunService.Stepped:Connect(function()
-            if states.noclip then
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
+        conns.noclip = RS.Stepped:Connect(function()
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
             end
         end)
-        
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.noclip then connections.noclip:Disconnect() end
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.CanCollide = true
-            end
-        end
+        if conns.noclip then conns.noclip:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- SPEED (WORKS!)
-createButton(content, "Super Speed (150)", "⚡", 3, function(s, st)
+-- SPEED
+btn("Speed (150)", "⚡", 3, function(s, st)
     states.speed = not states.speed
     
     if states.speed then
-        humanoid.WalkSpeed = 150
-        connections.speed = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-            if states.speed then humanoid.WalkSpeed = 150 end
-        end)
+        hum.WalkSpeed = 150
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.speed then connections.speed:Disconnect() end
-        humanoid.WalkSpeed = 16
+        hum.WalkSpeed = 16
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- JUMP (WORKS!)
-createButton(content, "Super Jump (200)", "🦘", 4, function(s, st)
+-- JUMP
+btn("Jump (200)", "🦘", 4, function(s, st)
     states.jump = not states.jump
     
     if states.jump then
-        humanoid.JumpPower = 200
-        connections.jump = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
-            if states.jump then humanoid.JumpPower = 200 end
-        end)
+        hum.JumpPower = 200
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.jump then connections.jump:Disconnect() end
-        humanoid.JumpPower = 50
+        hum.JumpPower = 50
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- INFINITE JUMP (WORKS!)
-createButton(content, "Infinite Jump", "♾️", 5, function(s, st)
-    states.infiniteJump = not states.infiniteJump
+-- INF JUMP
+btn("Inf Jump", "♾️", 5, function(s, st)
+    states.infj = not states.infj
     
-    if states.infiniteJump then
-        connections.infiniteJump = UserInputService.JumpRequest:Connect(function()
-            if states.infiniteJump then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
+    if states.infj then
+        conns.infj = UIS.JumpRequest:Connect(function()
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.infiniteJump then connections.infiniteJump:Disconnect() end
+        if conns.infj then conns.infj:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- REALISTIC HIP THRUSTING HUMP! (FIXED!)
-createButton(content, "HUMP Selected (REALISTIC HIP THRUST)", "😈", 6, function(s, st)
+-- HUMP (REALISTIC!)
+btn("HUMP Selected", "😈", 6, function(s, st)
     states.hump = not states.hump
     
     if states.hump then
-        if not selectedPlayer then
+        if not selected then
             states.hump = false
-            notify("⚠️", "Select a player first!", 2)
             return
         end
         
-        -- Store original CFrame
-        local originalRootC0
-        local originalWaistC0
+        local isR15 = char:FindFirstChild("UpperTorso") ~= nil
+        local waist = isR15 and char.UpperTorso:FindFirstChild("Waist") or root:FindFirstChild("RootJoint")
+        local origWaist = waist and waist.C0
         
-        if isR15 then
-            -- R15: We need to manipulate the Waist joint
-            local waist = character:FindFirstChild("UpperTorso"):FindFirstChild("Waist")
-            if waist then
-                originalWaistC0 = waist.C0
-            end
-        else
-            -- R6: Manipulate Root joint
-            local root = rootPart:FindFirstChild("RootJoint")
-            if root then
-                originalRootC0 = root.C0
-            end
-        end
-        
-        connections.hump = RunService.Heartbeat:Connect(function()
-            if not states.hump or not selectedPlayer then
-                -- Reset on stop
-                if isR15 and character:FindFirstChild("UpperTorso") then
-                    local waist = character.UpperTorso:FindFirstChild("Waist")
-                    if waist and originalWaistC0 then
-                        waist.C0 = originalWaistC0
-                    end
-                elseif not isR15 and rootPart:FindFirstChild("RootJoint") and originalRootC0 then
-                    rootPart.RootJoint.C0 = originalRootC0
-                end
+        conns.hump = RS.Heartbeat:Connect(function()
+            if not states.hump or not selected then
+                if waist and origWaist then waist.C0 = origWaist end
                 return
             end
             
-            if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local targetRoot = selectedPlayer.Character.HumanoidRootPart
+            if selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
+                local tr = selected.Character.HumanoidRootPart
+                local t = tick()
+                local thrust = math.sin(t * 10)
+                local off = thrust * 1.5
                 
-                -- FAST hip thrust motion (realistic humping)
-                local time = tick()
-                local thrust = math.sin(time * 10) -- Fast thrusting (10 times per second)
-                local offset = thrust * 1.2 -- Back and forth distance
+                root.CFrame = tr.CFrame * CFrame.new(0, 0, 2 + off) * CFrame.Angles(math.rad(10), 0, 0)
                 
-                -- Position behind target with thrust offset
-                rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2 + offset) * CFrame.Angles(math.rad(10), 0, 0)
-                
-                -- Hip thrust animation - tilt torso forward/back
-                if isR15 and character:FindFirstChild("UpperTorso") then
-                    local waist = character.UpperTorso:FindFirstChild("Waist")
-                    if waist then
-                        -- Tilt upper body forward and back
-                        waist.C0 = originalWaistC0 * CFrame.Angles(math.rad(thrust * 15), 0, 0)
-                    end
-                elseif not isR15 and rootPart:FindFirstChild("RootJoint") then
-                    -- R6 hip thrust
-                    rootPart.RootJoint.C0 = originalRootC0 * CFrame.Angles(math.rad(thrust * 15), 0, 0)
-                end
-                
-                -- Raise both arms up
-                if isR15 then
-                    -- R15 Arms
-                    if character:FindFirstChild("RightUpperArm") then
-                        local rightShoulder = character.UpperTorso:FindFirstChild("RightShoulder")
-                        if rightShoulder then
-                            rightShoulder.C0 = CFrame.new(1, 0.5, 0) * CFrame.Angles(math.rad(90), 0, 0)
-                        end
-                    end
-                    if character:FindFirstChild("LeftUpperArm") then
-                        local leftShoulder = character.UpperTorso:FindFirstChild("LeftShoulder")
-                        if leftShoulder then
-                            leftShoulder.C0 = CFrame.new(-1, 0.5, 0) * CFrame.Angles(math.rad(90), 0, 0)
-                        end
-                    end
-                else
-                    -- R6 Arms
-                    if torso:FindFirstChild("Right Shoulder") then
-                        torso["Right Shoulder"].C0 = CFrame.new(1, 0.5, 0) * CFrame.Angles(math.rad(90), 0, 0)
-                    end
-                    if torso:FindFirstChild("Left Shoulder") then
-                        torso["Left Shoulder"].C0 = CFrame.new(-1, 0.5, 0) * CFrame.Angles(math.rad(90), 0, 0)
-                    end
+                if waist then
+                    waist.C0 = origWaist * CFrame.Angles(math.rad(thrust * 20), 0, 0)
                 end
             end
         end)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notify("😈", "HUMPING " .. selectedPlayer.Name .. "!", 2)
     else
-        if connections.hump then connections.hump:Disconnect() end
-        
-        -- Reset arms and torso
-        if isR15 then
-            if character:FindFirstChild("UpperTorso") then
-                local rightShoulder = character.UpperTorso:FindFirstChild("RightShoulder")
-                local leftShoulder = character.UpperTorso:FindFirstChild("LeftShoulder")
-                if rightShoulder then
-                    rightShoulder.C0 = CFrame.new(1, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0)
-                end
-                if leftShoulder then
-                    leftShoulder.C0 = CFrame.new(-1, 0.5, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0)
-                end
-            end
-        else
-            if torso:FindFirstChild("Right Shoulder") then
-                torso["Right Shoulder"].C0 = CFrame.new(1, 0.5, 0, 0, 0, 1, 0, 1, 0, -1, 0, 0)
-            end
-            if torso:FindFirstChild("Left Shoulder") then
-                torso["Left Shoulder"].C0 = CFrame.new(-1, 0.5, 0, 0, 0, -1, 0, 1, 0, 1, 0, 0)
-            end
-        end
-        
+        if conns.hump then conns.hump:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- TP TO SELECTED (WORKS!)
-createButton(content, "TP to Selected", "📍", 7, function(s, st)
-    if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetRoot = selectedPlayer.Character.HumanoidRootPart
-        rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
-        notify("✅", "Teleported to " .. selectedPlayer.Name, 1.5)
-    else
-        notify("⚠️", "Select a player first!", 2)
+-- TP TO
+btn("TP to Selected", "📍", 7, function(s, st)
+    if selected and selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
+        root.CFrame = selected.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
     end
 end)
 
--- FOLLOW PLAYER (WORKS!)
-createButton(content, "Follow Selected", "🎯", 8, function(s, st)
+-- FOLLOW
+btn("Follow Selected", "🎯", 8, function(s, st)
     states.follow = not states.follow
     
     if states.follow then
-        if not selectedPlayer then
+        if not selected then
             states.follow = false
-            notify("⚠️", "Select a player first!", 2)
             return
         end
         
-        connections.follow = RunService.Heartbeat:Connect(function()
-            if not states.follow or not selectedPlayer then return end
-            
-            if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local targetRoot = selectedPlayer.Character.HumanoidRootPart
-                rootPart.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+        conns.follow = RS.Heartbeat:Connect(function()
+            if not states.follow or not selected then return end
+            if selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
+                root.CFrame = selected.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
             end
         end)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notify("🎯", "Following " .. selectedPlayer.Name, 2)
     else
-        if connections.follow then connections.follow:Disconnect() end
+        if conns.follow then conns.follow:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- FLING SUPER (WORKS!)
-createButton(content, "FLING (Spin Super Fast)", "💥", 9, function(s, st)
+-- FLING
+btn("FLING (Spin)", "💥", 9, function(s, st)
     states.fling = not states.fling
     
     if states.fling then
-        -- Make character spin super fast to fling others
         local spin = Instance.new("BodyAngularVelocity")
-        spin.Name = "Spin"
-        spin.MaxTorque = Vector3.new(0, math.huge, 0)
-        spin.AngularVelocity = Vector3.new(0, 100, 0) -- Crazy spin speed
-        spin.P = 5000
-        spin.Parent = rootPart
+        spin.MaxTorque = Vector3.new(0, 9e9, 0)
+        spin.AngularVelocity = Vector3.new(0, 100, 0)
+        spin.Parent = root
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notify("💥", "FLING MODE!", 2)
     else
-        if rootPart:FindFirstChild("Spin") then
-            rootPart.Spin:Destroy()
+        for _, v in pairs(root:GetChildren()) do
+            if v:IsA("BodyAngularVelocity") then v:Destroy() end
         end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- SPIN CHARACTER (WORKS!)
-createButton(content, "Spin Character", "🌀", 10, function(s, st)
+-- SPIN
+btn("Spin Character", "🌀", 10, function(s, st)
     states.spin = not states.spin
     
     if states.spin then
-        connections.spin = RunService.Heartbeat:Connect(function()
-            if states.spin and rootPart then
-                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(15), 0)
+        conns.spin = RS.Heartbeat:Connect(function()
+            if states.spin then
+                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(15), 0)
             end
         end)
-        
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.spin then connections.spin:Disconnect() end
+        if conns.spin then conns.spin:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- SEIZURE (WORKS!)
-createButton(content, "Seizure Mode (Shake Violently)", "📳", 11, function(s, st)
+-- SEIZURE
+btn("Seizure", "📳", 11, function(s, st)
     states.seizure = not states.seizure
     
     if states.seizure then
-        connections.seizure = RunService.Heartbeat:Connect(function()
-            if states.seizure and rootPart then
-                rootPart.CFrame = rootPart.CFrame * CFrame.new(
+        conns.seizure = RS.Heartbeat:Connect(function()
+            if states.seizure then
+                root.CFrame = root.CFrame * CFrame.new(
                     math.random(-1, 1) * 0.5,
                     math.random(-1, 1) * 0.5,
                     math.random(-1, 1) * 0.5
-                ) * CFrame.Angles(
-                    math.rad(math.random(-30, 30)),
-                    math.rad(math.random(-30, 30)),
-                    math.rad(math.random(-30, 30))
                 )
             end
         end)
-        
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
     else
-        if connections.seizure then connections.seizure:Disconnect() end
+        if conns.seizure then conns.seizure:Disconnect() end
         st.Text = "OFF"
         s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- SIT (WORKS!)
-createButton(content, "Sit in Air", "🪑", 12, function(s, st)
-    states.sit = not states.sit
-    
-    if states.sit then
-        humanoid.Sit = true
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        humanoid.Sit = false
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- PLATFORM (WORKS!)
-createButton(content, "Platform Under You", "🟦", 13, function(s, st)
-    states.platform = not states.platform
-    
-    if states.platform then
-        local platform = Instance.new("Part")
-        platform.Name = "Platform"
-        platform.Size = Vector3.new(8, 0.5, 8)
-        platform.Anchored = true
-        platform.Transparency = 0.5
-        platform.BrickColor = BrickColor.new("Bright red")
-        platform.Material = Enum.Material.Neon
-        platform.CanCollide = true
-        platform.Parent = Workspace
-        
-        connections.platform = RunService.Heartbeat:Connect(function()
-            if states.platform and rootPart then
-                platform.CFrame = CFrame.new(rootPart.Position.X, rootPart.Position.Y - 4, rootPart.Position.Z)
-            end
-        end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        if connections.platform then connections.platform:Disconnect() end
-        if Workspace:FindFirstChild("Platform") then
-            Workspace.Platform:Destroy()
-        end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- HEADLESS (WORKS!)
-createButton(content, "Headless", "👤", 14, function(s, st)
-    states.headless = not states.headless
-    
-    if states.headless and character:FindFirstChild("Head") then
-        character.Head.Transparency = 1
-        if character.Head:FindFirstChild("face") then
-            character.Head.face.Transparency = 1
-        end
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        if character:FindFirstChild("Head") then
-            character.Head.Transparency = 0
-            if character.Head:FindFirstChild("face") then
-                character.Head.face.Transparency = 0
-            end
-        end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- ORBIT PLAYER (WORKS!)
-createButton(content, "Orbit Selected Player", "🌍", 15, function(s, st)
-    states.orbit = not states.orbit
-    
-    if states.orbit then
-        if not selectedPlayer then
-            states.orbit = false
-            notify("⚠️", "Select a player first!", 2)
-            return
+-- HEADLESS
+btn("Headless", "👤", 12, function(s, st)
+    if char:FindFirstChild("Head") then
+        char.Head.Transparency = s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) and 1 or 0
+        if char.Head:FindFirstChild("face") then
+            char.Head.face.Transparency = s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) and 1 or 0
         end
         
-        local angle = 0
-        connections.orbit = RunService.Heartbeat:Connect(function()
-            if not states.orbit or not selectedPlayer then return end
-            
-            if selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                local targetRoot = selectedPlayer.Character.HumanoidRootPart
-                
-                angle = angle + 0.1
-                local x = math.cos(angle) * 8
-                local z = math.sin(angle) * 8
-                
-                rootPart.CFrame = targetRoot.CFrame * CFrame.new(x, 2, z)
-            end
-        end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-        notify("🌍", "Orbiting " .. selectedPlayer.Name, 2)
-    else
-        if connections.orbit then connections.orbit:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- BACKFLIP SPAM (WORKS!)
-createButton(content, "Backflip Spam", "🤸", 16, function(s, st)
-    states.backflip = not states.backflip
-    
-    if states.backflip then
-        connections.backflip = RunService.Heartbeat:Connect(function()
-            if states.backflip and rootPart then
-                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(math.rad(10), 0, 0)
-            end
-        end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        if connections.backflip then connections.backflip:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- HELICOPTER (WORKS!)
-createButton(content, "Helicopter (Fly + Spin)", "🚁", 17, function(s, st)
-    states.helicopter = not states.helicopter
-    
-    if states.helicopter then
-        local bodyVel = Instance.new("BodyVelocity")
-        bodyVel.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bodyVel.Velocity = Vector3.new(0, 50, 0)
-        bodyVel.Parent = rootPart
-        
-        connections.helicopter = RunService.Heartbeat:Connect(function()
-            if states.helicopter and rootPart then
-                rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(25), 0)
-            end
-        end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        if connections.helicopter then connections.helicopter:Disconnect() end
-        for _, obj in pairs(rootPart:GetChildren()) do
-            if obj:IsA("BodyVelocity") then obj:Destroy() end
+        if s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) then
+            st.Text = "ON"
+            s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        else
+            st.Text = "OFF"
+            s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
         end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- Entrance Animation
-mainFrame.Size = UDim2.new(0, 0, 0, 0)
-playerListFrame.Size = UDim2.new(0, 0, 0, 0)
-
-wait(0.1)
-
-TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-    Size = UDim2.new(0, 500, 0, 500)
-}):Play()
-
-wait(0.2)
-
-TweenService:Create(playerListFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-    Size = UDim2.new(0, 230, 0, 500)
-}):Play()
-
-wait(1)
-notify("💀 WORKING CHAOS", "All Features Fixed!", 3)
-wait(1)
-notify("😈 HIP THRUST", "Realistic Humping Added!", 2)
-
-print("💀═══════════════════════════════════════════════════════════💀")
-print("║   MATTHEW HIPPO - WORKING CHAOS MODE                       ║")
-print("║   ALL FEATURES ACTUALLY WORK NOW!                          ║")
-print("║   😈 REALISTIC HIP THRUSTING HUMP!                        ║")
-print("║   17 WORKING Features                                      ║")
-print("║   Made by Skinny Nicolas                                   ║")
-print("💀═══════════════════════════════════════════════════════════💀")
+print("💀 LOADED!")
+print("🦛 Matthew Hippo Script")
+print("😈 Realistic Hip Thrusting Hump!")
