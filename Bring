@@ -1,7 +1,7 @@
- -- MATTHEW HIPPO - MINIMAL VERSION (GUARANTEED TO LOAD!)
--- By Skinny Nicolas
+-- MATTHEW HIPPO - FIXED UI VERSION
+-- By Skinny Nicolas for Matthew
 
-print("💀 Loading...")
+print("💀 Loading Matthew Hippo...")
 
 local Players = game:GetService("Players")
 local RS = game:GetService("RunService")
@@ -18,10 +18,12 @@ local gui = Instance.new("ScreenGui")
 gui.ResetOnSpawn = false
 gui.Parent = plr.PlayerGui
 
+-- Main Frame
 local main = Instance.new("Frame")
 main.Size = UDim2.new(0, 400, 0, 450)
 main.Position = UDim2.new(0.5, -200, 0.5, -225)
 main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+main.BorderSizePixel = 0
 main.Active = true
 main.Draggable = true
 main.Parent = gui
@@ -35,9 +37,12 @@ stroke.Color = Color3.fromRGB(255, 0, 0)
 stroke.Thickness = 2
 stroke.Parent = main
 
+-- Header
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 50)
+title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+title.BorderSizePixel = 0
 title.Text = "💀 MATTHEW HIPPO 💀"
 title.TextSize = 18
 title.TextColor3 = Color3.fromRGB(255, 0, 0)
@@ -52,9 +57,10 @@ local close = Instance.new("TextButton")
 close.Size = UDim2.new(0, 40, 0, 40)
 close.Position = UDim2.new(1, -45, 0, 5)
 close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+close.BorderSizePixel = 0
 close.Text = "X"
 close.TextSize = 20
-close.TextColor3 = Color3.white
+close.TextColor3 = Color3.fromRGB(255, 255, 255)
 close.Font = Enum.Font.GothamBold
 close.Parent = title
 
@@ -66,23 +72,40 @@ close.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
+-- Content Area (FIXED!)
 local scroll = Instance.new("ScrollingFrame")
 scroll.Size = UDim2.new(1, -20, 1, -70)
 scroll.Position = UDim2.new(0, 10, 0, 60)
-scroll.BackgroundTransparency = 1
-scroll.ScrollBarThickness = 4
+scroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- VISIBLE BACKGROUND!
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 6
+scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
 scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scroll.Parent = main
 
+local scrollCorner = Instance.new("UICorner")
+scrollCorner.CornerRadius = UDim.new(0, 8)
+scrollCorner.Parent = scroll
+
 local layout = Instance.new("UIListLayout")
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.Padding = UDim.new(0, 5)
 layout.Parent = scroll
 
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 5)
+padding.PaddingBottom = UDim.new(0, 5)
+padding.PaddingLeft = UDim.new(0, 5)
+padding.PaddingRight = UDim.new(0, 5)
+padding.Parent = scroll
+
+-- Player List
 local plList = Instance.new("Frame")
 plList.Size = UDim2.new(0, 200, 0, 450)
 plList.Position = UDim2.new(0.5, 210, 0.5, -225)
 plList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+plList.BorderSizePixel = 0
 plList.Active = true
 plList.Draggable = true
 plList.Parent = gui
@@ -98,7 +121,9 @@ plStroke.Parent = plList
 
 local plTitle = Instance.new("TextLabel")
 plTitle.Size = UDim2.new(1, 0, 0, 40)
+plTitle.Position = UDim2.new(0, 0, 0, 0)
 plTitle.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
+plTitle.BorderSizePixel = 0
 plTitle.Text = "👥 PLAYERS"
 plTitle.TextSize = 14
 plTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
@@ -112,47 +137,72 @@ plTitleCorner.Parent = plTitle
 local plScroll = Instance.new("ScrollingFrame")
 plScroll.Size = UDim2.new(1, -10, 1, -50)
 plScroll.Position = UDim2.new(0, 5, 0, 45)
-plScroll.BackgroundTransparency = 1
-plScroll.ScrollBarThickness = 4
+plScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+plScroll.BorderSizePixel = 0
+plScroll.ScrollBarThickness = 6
+plScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
 plScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 plScroll.Parent = plList
 
+local plScrollCorner = Instance.new("UICorner")
+plScrollCorner.CornerRadius = UDim.new(0, 8)
+plScrollCorner.Parent = plScroll
+
 local plLayout = Instance.new("UIListLayout")
+plLayout.SortOrder = Enum.SortOrder.Name
 plLayout.Padding = UDim.new(0, 3)
 plLayout.Parent = plScroll
+
+local plPadding = Instance.new("UIPadding")
+plPadding.PaddingTop = UDim.new(0, 3)
+plPadding.PaddingBottom = UDim.new(0, 3)
+plPadding.PaddingLeft = UDim.new(0, 3)
+plPadding.PaddingRight = UDim.new(0, 3)
+plPadding.Parent = plScroll
 
 local states = {}
 local conns = {}
 local selected = nil
 local plBtns = {}
 
+-- Create Button Function
 local function btn(txt, ico, ord, cb)
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, 0, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    b.BorderSizePixel = 0
     b.Text = ""
     b.LayoutOrder = ord
+    b.AutoButtonColor = false
     b.Parent = scroll
     
     local bc = Instance.new("UICorner")
     bc.CornerRadius = UDim.new(0, 8)
     bc.Parent = b
     
+    local bStroke = Instance.new("UIStroke")
+    bStroke.Color = Color3.fromRGB(50, 50, 50)
+    bStroke.Thickness = 1
+    bStroke.Parent = b
+    
     local i = Instance.new("TextLabel")
     i.Size = UDim2.new(0, 30, 1, 0)
+    i.Position = UDim2.new(0, 5, 0, 0)
     i.BackgroundTransparency = 1
     i.Text = ico
     i.TextSize = 16
+    i.Font = Enum.Font.GothamBold
+    i.TextColor3 = Color3.fromRGB(255, 255, 255)
     i.Parent = b
     
     local t = Instance.new("TextLabel")
     t.Size = UDim2.new(1, -75, 1, 0)
-    t.Position = UDim2.new(0, 30, 0, 0)
+    t.Position = UDim2.new(0, 35, 0, 0)
     t.BackgroundTransparency = 1
     t.Text = txt
     t.TextSize = 11
-    t.TextColor3 = Color3.white
+    t.TextColor3 = Color3.fromRGB(220, 220, 220)
     t.Font = Enum.Font.GothamBold
     t.TextXAlignment = Enum.TextXAlignment.Left
     t.Parent = b
@@ -160,7 +210,8 @@ local function btn(txt, ico, ord, cb)
     local s = Instance.new("Frame")
     s.Size = UDim2.new(0, 40, 0, 20)
     s.Position = UDim2.new(1, -45, 0.5, -10)
-    s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    s.BorderSizePixel = 0
     s.Parent = b
     
     local sc = Instance.new("UICorner")
@@ -172,43 +223,70 @@ local function btn(txt, ico, ord, cb)
     st.BackgroundTransparency = 1
     st.Text = "OFF"
     st.TextSize = 9
-    st.TextColor3 = Color3.white
+    st.TextColor3 = Color3.fromRGB(200, 200, 200)
     st.Font = Enum.Font.GothamBold
     st.Parent = s
+    
+    b.MouseEnter:Connect(function()
+        b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        bStroke.Color = Color3.fromRGB(255, 0, 0)
+    end)
+    
+    b.MouseLeave:Connect(function()
+        b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        bStroke.Color = Color3.fromRGB(50, 50, 50)
+    end)
     
     b.MouseButton1Click:Connect(function()
         cb(s, st)
     end)
 end
 
+-- Create Player Button
 local function plBtn(p)
     if plBtns[p] then return end
     
     local b = Instance.new("TextButton")
     b.Size = UDim2.new(1, -5, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    b.BorderSizePixel = 0
     b.Text = "  " .. p.Name
     b.TextSize = 11
-    b.TextColor3 = Color3.white
+    b.TextColor3 = Color3.fromRGB(220, 220, 220)
     b.Font = Enum.Font.GothamBold
     b.TextXAlignment = Enum.TextXAlignment.Left
+    b.AutoButtonColor = false
     b.Parent = plScroll
     
     local bc = Instance.new("UICorner")
     bc.CornerRadius = UDim.new(0, 8)
     bc.Parent = b
     
+    b.MouseEnter:Connect(function()
+        if selected ~= p then
+            b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        end
+    end)
+    
+    b.MouseLeave:Connect(function()
+        if selected ~= p then
+            b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        end
+    end)
+    
     b.MouseButton1Click:Connect(function()
         if selected and plBtns[selected] then
-            plBtns[selected].BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            plBtns[selected].BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         end
         selected = p
         b.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        print("Selected: " .. p.Name)
     end)
     
     plBtns[p] = b
 end
 
+-- Update Player List
 local function updatePl()
     for p, b in pairs(plBtns) do
         if not Players:FindFirstChild(p.Name) then
@@ -230,18 +308,24 @@ end)
 
 updatePl()
 
+-- FEATURES START HERE!
+
 -- FLY
-btn("Fly (WASD)", "🕊️", 1, function(s, st)
+btn("Fly (WASD + Space/Shift)", "🕊️", 1, function(s, st)
     states.fly = not states.fly
     
     if states.fly then
         local bv = Instance.new("BodyVelocity")
+        bv.Name = "FlyVel"
         bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.new(0, 0, 0)
         bv.Parent = root
         
         local bg = Instance.new("BodyGyro")
+        bg.Name = "FlyGyro"
         bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
         bg.P = 9e4
+        bg.CFrame = root.CFrame
         bg.Parent = root
         
         conns.fly = RS.Heartbeat:Connect(function()
@@ -255,19 +339,24 @@ btn("Fly (WASD)", "🕊️", 1, function(s, st)
             if UIS:IsKeyDown(Enum.KeyCode.Space) then m = m + Vector3.new(0, 1, 0) end
             if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then m = m - Vector3.new(0, 1, 0) end
             
-            bv.Velocity = m.Unit * 200
+            if m.Magnitude > 0 then
+                m = m.Unit
+            end
+            
+            bv.Velocity = m * 200
             bg.CFrame = cam.CFrame
         end)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
         if conns.fly then conns.fly:Disconnect() end
-        for _, v in pairs(root:GetChildren()) do
-            if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then v:Destroy() end
-        end
+        if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
+        if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
@@ -277,73 +366,99 @@ btn("Noclip", "👻", 2, function(s, st)
     
     if states.noclip then
         conns.noclip = RS.Stepped:Connect(function()
-            for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") then v.CanCollide = false end
+            if states.noclip then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("BasePart") then v.CanCollide = false end
+                end
             end
         end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
         if conns.noclip then conns.noclip:Disconnect() end
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                v.CanCollide = true
+            end
+        end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
 -- SPEED
-btn("Speed (150)", "⚡", 3, function(s, st)
+btn("Super Speed (150)", "⚡", 3, function(s, st)
     states.speed = not states.speed
     
     if states.speed then
         hum.WalkSpeed = 150
+        conns.speed = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            if states.speed then hum.WalkSpeed = 150 end
+        end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
+        if conns.speed then conns.speed:Disconnect() end
         hum.WalkSpeed = 16
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
 -- JUMP
-btn("Jump (200)", "🦘", 4, function(s, st)
+btn("Super Jump (200)", "🦘", 4, function(s, st)
     states.jump = not states.jump
     
     if states.jump then
         hum.JumpPower = 200
+        conns.jump = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
+            if states.jump then hum.JumpPower = 200 end
+        end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
+        if conns.jump then conns.jump:Disconnect() end
         hum.JumpPower = 50
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- INF JUMP
-btn("Inf Jump", "♾️", 5, function(s, st)
+-- INFINITE JUMP
+btn("Infinite Jump", "♾️", 5, function(s, st)
     states.infj = not states.infj
     
     if states.infj then
         conns.infj = UIS.JumpRequest:Connect(function()
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            if states.infj then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
         end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
         if conns.infj then conns.infj:Disconnect() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- HUMP (REALISTIC!)
-btn("HUMP Selected", "😈", 6, function(s, st)
+-- REALISTIC HUMP
+btn("HUMP Selected (HIP THRUST)", "😈", 6, function(s, st)
     states.hump = not states.hump
     
     if states.hump then
         if not selected then
             states.hump = false
+            print("⚠️ Select a player first!")
             return
         end
         
@@ -365,7 +480,7 @@ btn("HUMP Selected", "😈", 6, function(s, st)
                 
                 root.CFrame = tr.CFrame * CFrame.new(0, 0, 2 + off) * CFrame.Angles(math.rad(10), 0, 0)
                 
-                if waist then
+                if waist and origWaist then
                     waist.C0 = origWaist * CFrame.Angles(math.rad(thrust * 20), 0, 0)
                 end
             end
@@ -373,17 +488,23 @@ btn("HUMP Selected", "😈", 6, function(s, st)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        print("😈 Humping " .. selected.Name)
     else
         if conns.hump then conns.hump:Disconnect() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- TP TO
+-- TP TO SELECTED
 btn("TP to Selected", "📍", 7, function(s, st)
     if selected and selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
         root.CFrame = selected.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        print("✅ Teleported to " .. selected.Name)
+    else
+        print("⚠️ Select a player first!")
     end
 end)
 
@@ -394,6 +515,7 @@ btn("Follow Selected", "🎯", 8, function(s, st)
     if states.follow then
         if not selected then
             states.follow = false
+            print("⚠️ Select a player first!")
             return
         end
         
@@ -406,10 +528,13 @@ btn("Follow Selected", "🎯", 8, function(s, st)
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        print("🎯 Following " .. selected.Name)
     else
         if conns.follow then conns.follow:Disconnect() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
@@ -419,18 +544,21 @@ btn("FLING (Spin)", "💥", 9, function(s, st)
     
     if states.fling then
         local spin = Instance.new("BodyAngularVelocity")
+        spin.Name = "Spin"
         spin.MaxTorque = Vector3.new(0, 9e9, 0)
         spin.AngularVelocity = Vector3.new(0, 100, 0)
+        spin.P = 5000
         spin.Parent = root
         
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        print("💥 FLING MODE!")
     else
-        for _, v in pairs(root:GetChildren()) do
-            if v:IsA("BodyAngularVelocity") then v:Destroy() end
-        end
+        if root:FindFirstChild("Spin") then root.Spin:Destroy() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
@@ -446,15 +574,17 @@ btn("Spin Character", "🌀", 10, function(s, st)
         end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
         if conns.spin then conns.spin:Disconnect() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
 -- SEIZURE
-btn("Seizure", "📳", 11, function(s, st)
+btn("Seizure Mode", "📳", 11, function(s, st)
     states.seizure = not states.seizure
     
     if states.seizure then
@@ -469,31 +599,43 @@ btn("Seizure", "📳", 11, function(s, st)
         end)
         st.Text = "ON"
         s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
     else
         if conns.seizure then conns.seizure:Disconnect() end
         st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
 -- HEADLESS
 btn("Headless", "👤", 12, function(s, st)
-    if char:FindFirstChild("Head") then
-        char.Head.Transparency = s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) and 1 or 0
+    states.headless = not states.headless
+    
+    if states.headless and char:FindFirstChild("Head") then
+        char.Head.Transparency = 1
         if char.Head:FindFirstChild("face") then
-            char.Head.face.Transparency = s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) and 1 or 0
+            char.Head.face.Transparency = 1
         end
-        
-        if s.BackgroundColor3 == Color3.fromRGB(50, 50, 50) then
-            st.Text = "ON"
-            s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        else
-            st.Text = "OFF"
-            s.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        st.Text = "ON"
+        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+    else
+        if char:FindFirstChild("Head") then
+            char.Head.Transparency = 0
+            if char.Head:FindFirstChild("face") then
+                char.Head.face.Transparency = 0
+            end
         end
+        st.Text = "OFF"
+        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+        st.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
-print("💀 LOADED!")
-print("🦛 Matthew Hippo Script")
-print("😈 Realistic Hip Thrusting Hump!")
+print("💀═══════════════════════════════════════════")
+print("║  MATTHEW HIPPO LOADED!                    ║")
+print("║  12 Features Ready!                       ║")
+print("║  😈 Realistic Hip Thrusting Hump!        ║")
+print("║  Made by Skinny Nicolas                   ║")
+print("💀═══════════════════════════════════════════")
