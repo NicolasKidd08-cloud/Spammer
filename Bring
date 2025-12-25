@@ -1,641 +1,348 @@
--- MATTHEW HIPPO - FIXED UI VERSION
--- By Skinny Nicolas for Matthew
+-- MATTHEW HIPPO - ULTRA MINIMAL (GUARANTEED LOAD!)
 
-print("💀 Loading Matthew Hippo...")
+print("Starting script...")
 
-local Players = game:GetService("Players")
-local RS = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-local TS = game:GetService("TweenService")
+local p = game.Players.LocalPlayer
+local c = p.Character or p.CharacterAdded:Wait()
+local r = c:WaitForChild("HumanoidRootPart")
+local h = c:WaitForChild("Humanoid")
 
-local plr = Players.LocalPlayer
-local char = plr.Character or plr.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
-local root = char:WaitForChild("HumanoidRootPart")
-local cam = workspace.CurrentCamera
+print("Character loaded...")
 
-local gui = Instance.new("ScreenGui")
-gui.ResetOnSpawn = false
-gui.Parent = plr.PlayerGui
+local g = Instance.new("ScreenGui", p.PlayerGui)
+g.ResetOnSpawn = false
 
--- Main Frame
-local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 400, 0, 450)
-main.Position = UDim2.new(0.5, -200, 0.5, -225)
-main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-main.BorderSizePixel = 0
-main.Active = true
-main.Draggable = true
-main.Parent = gui
+print("GUI created...")
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 10)
-corner.Parent = main
+local m = Instance.new("Frame", g)
+m.Size = UDim2.new(0, 350, 0, 400)
+m.Position = UDim2.new(0.5, -175, 0.5, -200)
+m.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+m.BorderSizePixel = 2
+m.BorderColor3 = Color3.new(1, 0, 0)
+m.Active = true
+m.Draggable = true
 
-local stroke = Instance.new("UIStroke")
-stroke.Color = Color3.fromRGB(255, 0, 0)
-stroke.Thickness = 2
-stroke.Parent = main
+print("Main frame created...")
 
--- Header
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 50)
-title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-title.BorderSizePixel = 0
-title.Text = "💀 MATTHEW HIPPO 💀"
-title.TextSize = 18
-title.TextColor3 = Color3.fromRGB(255, 0, 0)
-title.Font = Enum.Font.GothamBold
-title.Parent = main
+local t = Instance.new("TextLabel", m)
+t.Size = UDim2.new(1, 0, 0, 40)
+t.BackgroundColor3 = Color3.new(0.15, 0, 0)
+t.BorderSizePixel = 0
+t.Text = "MATTHEW HIPPO"
+t.TextColor3 = Color3.new(1, 0, 0)
+t.TextSize = 18
+t.Font = Enum.Font.GothamBold
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 10)
-titleCorner.Parent = title
+local x = Instance.new("TextButton", m)
+x.Size = UDim2.new(0, 35, 0, 35)
+x.Position = UDim2.new(1, -38, 0, 3)
+x.BackgroundColor3 = Color3.new(0.5, 0, 0)
+x.Text = "X"
+x.TextColor3 = Color3.new(1, 1, 1)
+x.TextSize = 16
+x.Font = Enum.Font.GothamBold
+x.MouseButton1Click:Connect(function() g:Destroy() end)
 
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 40, 0, 40)
-close.Position = UDim2.new(1, -45, 0, 5)
-close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
-close.BorderSizePixel = 0
-close.Text = "X"
-close.TextSize = 20
-close.TextColor3 = Color3.fromRGB(255, 255, 255)
-close.Font = Enum.Font.GothamBold
-close.Parent = title
+print("Header created...")
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 8)
-closeCorner.Parent = close
+local s = Instance.new("ScrollingFrame", m)
+s.Size = UDim2.new(1, -10, 1, -50)
+s.Position = UDim2.new(0, 5, 0, 45)
+s.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+s.BorderSizePixel = 0
+s.ScrollBarThickness = 5
 
-close.MouseButton1Click:Connect(function()
-    gui:Destroy()
-end)
+local l = Instance.new("UIListLayout", s)
+l.Padding = UDim.new(0, 5)
 
--- Content Area (FIXED!)
-local scroll = Instance.new("ScrollingFrame")
-scroll.Size = UDim2.new(1, -20, 1, -70)
-scroll.Position = UDim2.new(0, 10, 0, 60)
-scroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- VISIBLE BACKGROUND!
-scroll.BorderSizePixel = 0
-scroll.ScrollBarThickness = 6
-scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
-scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-scroll.Parent = main
+print("Scroll frame created...")
 
-local scrollCorner = Instance.new("UICorner")
-scrollCorner.CornerRadius = UDim.new(0, 8)
-scrollCorner.Parent = scroll
+local pl = Instance.new("Frame", g)
+pl.Size = UDim2.new(0, 180, 0, 400)
+pl.Position = UDim2.new(0.5, 185, 0.5, -200)
+pl.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
+pl.BorderSizePixel = 2
+pl.BorderColor3 = Color3.new(1, 0, 0)
+pl.Active = true
+pl.Draggable = true
 
-local layout = Instance.new("UIListLayout")
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-layout.Padding = UDim.new(0, 5)
-layout.Parent = scroll
+local pt = Instance.new("TextLabel", pl)
+pt.Size = UDim2.new(1, 0, 0, 35)
+pt.BackgroundColor3 = Color3.new(0.15, 0, 0)
+pt.BorderSizePixel = 0
+pt.Text = "PLAYERS"
+pt.TextColor3 = Color3.new(1, 0, 0)
+pt.TextSize = 14
+pt.Font = Enum.Font.GothamBold
 
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 5)
-padding.PaddingBottom = UDim.new(0, 5)
-padding.PaddingLeft = UDim.new(0, 5)
-padding.PaddingRight = UDim.new(0, 5)
-padding.Parent = scroll
+local ps = Instance.new("ScrollingFrame", pl)
+ps.Size = UDim2.new(1, -5, 1, -40)
+ps.Position = UDim2.new(0, 2.5, 0, 37.5)
+ps.BackgroundColor3 = Color3.new(0.15, 0.15, 0.15)
+ps.BorderSizePixel = 0
+ps.ScrollBarThickness = 5
 
--- Player List
-local plList = Instance.new("Frame")
-plList.Size = UDim2.new(0, 200, 0, 450)
-plList.Position = UDim2.new(0.5, 210, 0.5, -225)
-plList.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-plList.BorderSizePixel = 0
-plList.Active = true
-plList.Draggable = true
-plList.Parent = gui
+local ll = Instance.new("UIListLayout", ps)
+ll.Padding = UDim.new(0, 3)
 
-local plCorner = Instance.new("UICorner")
-plCorner.CornerRadius = UDim.new(0, 10)
-plCorner.Parent = plList
+print("Player list created...")
 
-local plStroke = Instance.new("UIStroke")
-plStroke.Color = Color3.fromRGB(255, 0, 0)
-plStroke.Thickness = 2
-plStroke.Parent = plList
+local st = {}
+local cn = {}
+local sel = nil
+local pb = {}
 
-local plTitle = Instance.new("TextLabel")
-plTitle.Size = UDim2.new(1, 0, 0, 40)
-plTitle.Position = UDim2.new(0, 0, 0, 0)
-plTitle.BackgroundColor3 = Color3.fromRGB(20, 0, 0)
-plTitle.BorderSizePixel = 0
-plTitle.Text = "👥 PLAYERS"
-plTitle.TextSize = 14
-plTitle.TextColor3 = Color3.fromRGB(255, 0, 0)
-plTitle.Font = Enum.Font.GothamBold
-plTitle.Parent = plList
-
-local plTitleCorner = Instance.new("UICorner")
-plTitleCorner.CornerRadius = UDim.new(0, 10)
-plTitleCorner.Parent = plTitle
-
-local plScroll = Instance.new("ScrollingFrame")
-plScroll.Size = UDim2.new(1, -10, 1, -50)
-plScroll.Position = UDim2.new(0, 5, 0, 45)
-plScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-plScroll.BorderSizePixel = 0
-plScroll.ScrollBarThickness = 6
-plScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 0, 0)
-plScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-plScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-plScroll.Parent = plList
-
-local plScrollCorner = Instance.new("UICorner")
-plScrollCorner.CornerRadius = UDim.new(0, 8)
-plScrollCorner.Parent = plScroll
-
-local plLayout = Instance.new("UIListLayout")
-plLayout.SortOrder = Enum.SortOrder.Name
-plLayout.Padding = UDim.new(0, 3)
-plLayout.Parent = plScroll
-
-local plPadding = Instance.new("UIPadding")
-plPadding.PaddingTop = UDim.new(0, 3)
-plPadding.PaddingBottom = UDim.new(0, 3)
-plPadding.PaddingLeft = UDim.new(0, 3)
-plPadding.PaddingRight = UDim.new(0, 3)
-plPadding.Parent = plScroll
-
-local states = {}
-local conns = {}
-local selected = nil
-local plBtns = {}
-
--- Create Button Function
-local function btn(txt, ico, ord, cb)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1, 0, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    b.BorderSizePixel = 0
-    b.Text = ""
-    b.LayoutOrder = ord
-    b.AutoButtonColor = false
-    b.Parent = scroll
-    
-    local bc = Instance.new("UICorner")
-    bc.CornerRadius = UDim.new(0, 8)
-    bc.Parent = b
-    
-    local bStroke = Instance.new("UIStroke")
-    bStroke.Color = Color3.fromRGB(50, 50, 50)
-    bStroke.Thickness = 1
-    bStroke.Parent = b
-    
-    local i = Instance.new("TextLabel")
-    i.Size = UDim2.new(0, 30, 1, 0)
-    i.Position = UDim2.new(0, 5, 0, 0)
-    i.BackgroundTransparency = 1
-    i.Text = ico
-    i.TextSize = 16
-    i.Font = Enum.Font.GothamBold
-    i.TextColor3 = Color3.fromRGB(255, 255, 255)
-    i.Parent = b
-    
-    local t = Instance.new("TextLabel")
-    t.Size = UDim2.new(1, -75, 1, 0)
-    t.Position = UDim2.new(0, 35, 0, 0)
-    t.BackgroundTransparency = 1
-    t.Text = txt
-    t.TextSize = 11
-    t.TextColor3 = Color3.fromRGB(220, 220, 220)
-    t.Font = Enum.Font.GothamBold
-    t.TextXAlignment = Enum.TextXAlignment.Left
-    t.Parent = b
-    
-    local s = Instance.new("Frame")
-    s.Size = UDim2.new(0, 40, 0, 20)
-    s.Position = UDim2.new(1, -45, 0.5, -10)
-    s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-    s.BorderSizePixel = 0
-    s.Parent = b
-    
-    local sc = Instance.new("UICorner")
-    sc.CornerRadius = UDim.new(0, 10)
-    sc.Parent = s
-    
-    local st = Instance.new("TextLabel")
-    st.Size = UDim2.new(1, 0, 1, 0)
-    st.BackgroundTransparency = 1
-    st.Text = "OFF"
-    st.TextSize = 9
-    st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    st.Font = Enum.Font.GothamBold
-    st.Parent = s
-    
-    b.MouseEnter:Connect(function()
-        b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        bStroke.Color = Color3.fromRGB(255, 0, 0)
-    end)
-    
-    b.MouseLeave:Connect(function()
-        b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        bStroke.Color = Color3.fromRGB(50, 50, 50)
-    end)
-    
-    b.MouseButton1Click:Connect(function()
-        cb(s, st)
-    end)
-end
-
--- Create Player Button
-local function plBtn(p)
-    if plBtns[p] then return end
-    
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(1, -5, 0, 35)
-    b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    b.BorderSizePixel = 0
-    b.Text = "  " .. p.Name
+local function btn(txt, n, cb)
+    local b = Instance.new("TextButton", s)
+    b.Size = UDim2.new(1, -5, 0, 30)
+    b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    b.BorderSizePixel = 1
+    b.BorderColor3 = Color3.new(0.3, 0.3, 0.3)
+    b.Text = txt
+    b.TextColor3 = Color3.new(0.9, 0.9, 0.9)
     b.TextSize = 11
-    b.TextColor3 = Color3.fromRGB(220, 220, 220)
     b.Font = Enum.Font.GothamBold
-    b.TextXAlignment = Enum.TextXAlignment.Left
-    b.AutoButtonColor = false
-    b.Parent = plScroll
-    
-    local bc = Instance.new("UICorner")
-    bc.CornerRadius = UDim.new(0, 8)
-    bc.Parent = b
-    
-    b.MouseEnter:Connect(function()
-        if selected ~= p then
-            b.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-        end
-    end)
-    
-    b.MouseLeave:Connect(function()
-        if selected ~= p then
-            b.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        end
-    end)
-    
-    b.MouseButton1Click:Connect(function()
-        if selected and plBtns[selected] then
-            plBtns[selected].BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-        end
-        selected = p
-        b.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        print("Selected: " .. p.Name)
-    end)
-    
-    plBtns[p] = b
+    b.Name = n
+    b.MouseButton1Click:Connect(function() cb(b) end)
+    return b
 end
 
--- Update Player List
-local function updatePl()
-    for p, b in pairs(plBtns) do
-        if not Players:FindFirstChild(p.Name) then
+local function plb(tp)
+    if pb[tp] then return end
+    local b = Instance.new("TextButton", ps)
+    b.Size = UDim2.new(1, -5, 0, 28)
+    b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+    b.BorderSizePixel = 0
+    b.Text = tp.Name
+    b.TextColor3 = Color3.new(0.9, 0.9, 0.9)
+    b.TextSize = 10
+    b.Font = Enum.Font.GothamBold
+    b.MouseButton1Click:Connect(function()
+        if sel and pb[sel] then
+            pb[sel].BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+        end
+        sel = tp
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
+    end)
+    pb[tp] = b
+end
+
+local function up()
+    for tp, b in pairs(pb) do
+        if not game.Players:FindFirstChild(tp.Name) then
             b:Destroy()
-            plBtns[p] = nil
-            if selected == p then selected = nil end
+            pb[tp] = nil
+            if sel == tp then sel = nil end
         end
     end
-    for _, p in pairs(Players:GetPlayers()) do
-        if p ~= plr then plBtn(p) end
+    for _, tp in pairs(game.Players:GetPlayers()) do
+        if tp ~= p then plb(tp) end
     end
 end
 
 spawn(function()
     while wait(1) do
-        pcall(updatePl)
+        pcall(up)
     end
 end)
 
-updatePl()
+up()
 
--- FEATURES START HERE!
+print("Creating buttons...")
 
 -- FLY
-btn("Fly (WASD + Space/Shift)", "🕊️", 1, function(s, st)
-    states.fly = not states.fly
-    
-    if states.fly then
-        local bv = Instance.new("BodyVelocity")
-        bv.Name = "FlyVel"
-        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bv.Velocity = Vector3.new(0, 0, 0)
-        bv.Parent = root
-        
-        local bg = Instance.new("BodyGyro")
-        bg.Name = "FlyGyro"
-        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bg.P = 9e4
-        bg.CFrame = root.CFrame
-        bg.Parent = root
-        
-        conns.fly = RS.Heartbeat:Connect(function()
-            if not states.fly then return end
-            
+btn("FLY", "Fly", function(b)
+    st.fly = not st.fly
+    if st.fly then
+        local v = Instance.new("BodyVelocity", r)
+        v.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        local g = Instance.new("BodyGyro", r)
+        g.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        cn.fly = game:GetService("RunService").Heartbeat:Connect(function()
             local m = Vector3.new(0, 0, 0)
-            if UIS:IsKeyDown(Enum.KeyCode.W) then m = m + cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.S) then m = m - cam.CFrame.LookVector end
-            if UIS:IsKeyDown(Enum.KeyCode.A) then m = m - cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.D) then m = m + cam.CFrame.RightVector end
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then m = m + Vector3.new(0, 1, 0) end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then m = m - Vector3.new(0, 1, 0) end
-            
-            if m.Magnitude > 0 then
-                m = m.Unit
-            end
-            
-            bv.Velocity = m * 200
-            bg.CFrame = cam.CFrame
+            local u = game:GetService("UserInputService")
+            local c = workspace.CurrentCamera
+            if u:IsKeyDown(Enum.KeyCode.W) then m = m + c.CFrame.LookVector end
+            if u:IsKeyDown(Enum.KeyCode.S) then m = m - c.CFrame.LookVector end
+            if u:IsKeyDown(Enum.KeyCode.A) then m = m - c.CFrame.RightVector end
+            if u:IsKeyDown(Enum.KeyCode.D) then m = m + c.CFrame.RightVector end
+            if u:IsKeyDown(Enum.KeyCode.Space) then m = m + Vector3.new(0, 1, 0) end
+            if u:IsKeyDown(Enum.KeyCode.LeftShift) then m = m - Vector3.new(0, 1, 0) end
+            v.Velocity = m.Unit * 200
+            g.CFrame = c.CFrame
         end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.fly then conns.fly:Disconnect() end
-        if root:FindFirstChild("FlyVel") then root.FlyVel:Destroy() end
-        if root:FindFirstChild("FlyGyro") then root.FlyGyro:Destroy() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.fly then cn.fly:Disconnect() end
+        for _, o in pairs(r:GetChildren()) do
+            if o:IsA("BodyVelocity") or o:IsA("BodyGyro") then o:Destroy() end
+        end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- NOCLIP
-btn("Noclip", "👻", 2, function(s, st)
-    states.noclip = not states.noclip
-    
-    if states.noclip then
-        conns.noclip = RS.Stepped:Connect(function()
-            if states.noclip then
-                for _, v in pairs(char:GetDescendants()) do
-                    if v:IsA("BasePart") then v.CanCollide = false end
-                end
+btn("NOCLIP", "Noclip", function(b)
+    st.nc = not st.nc
+    if st.nc then
+        cn.nc = game:GetService("RunService").Stepped:Connect(function()
+            for _, v in pairs(c:GetDescendants()) do
+                if v:IsA("BasePart") then v.CanCollide = false end
             end
         end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.noclip then conns.noclip:Disconnect() end
-        for _, v in pairs(char:GetDescendants()) do
-            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
-                v.CanCollide = true
-            end
-        end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.nc then cn.nc:Disconnect() end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- SPEED
-btn("Super Speed (150)", "⚡", 3, function(s, st)
-    states.speed = not states.speed
-    
-    if states.speed then
-        hum.WalkSpeed = 150
-        conns.speed = hum:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-            if states.speed then hum.WalkSpeed = 150 end
-        end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+btn("SPEED", "Speed", function(b)
+    st.sp = not st.sp
+    if st.sp then
+        h.WalkSpeed = 150
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.speed then conns.speed:Disconnect() end
-        hum.WalkSpeed = 16
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        h.WalkSpeed = 16
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- JUMP
-btn("Super Jump (200)", "🦘", 4, function(s, st)
-    states.jump = not states.jump
-    
-    if states.jump then
-        hum.JumpPower = 200
-        conns.jump = hum:GetPropertyChangedSignal("JumpPower"):Connect(function()
-            if states.jump then hum.JumpPower = 200 end
-        end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+btn("JUMP", "Jump", function(b)
+    st.jp = not st.jp
+    if st.jp then
+        h.JumpPower = 200
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.jump then conns.jump:Disconnect() end
-        hum.JumpPower = 50
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        h.JumpPower = 50
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
--- INFINITE JUMP
-btn("Infinite Jump", "♾️", 5, function(s, st)
-    states.infj = not states.infj
-    
-    if states.infj then
-        conns.infj = UIS.JumpRequest:Connect(function()
-            if states.infj then
-                hum:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
+-- INF JUMP
+btn("INF JUMP", "InfJump", function(b)
+    st.ij = not st.ij
+    if st.ij then
+        cn.ij = game:GetService("UserInputService").JumpRequest:Connect(function()
+            h:ChangeState(Enum.HumanoidStateType.Jumping)
         end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.infj then conns.infj:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.ij then cn.ij:Disconnect() end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
--- REALISTIC HUMP
-btn("HUMP Selected (HIP THRUST)", "😈", 6, function(s, st)
-    states.hump = not states.hump
-    
-    if states.hump then
-        if not selected then
-            states.hump = false
-            print("⚠️ Select a player first!")
+-- HUMP
+btn("HUMP", "Hump", function(b)
+    st.hm = not st.hm
+    if st.hm then
+        if not sel then
+            st.hm = false
             return
         end
-        
-        local isR15 = char:FindFirstChild("UpperTorso") ~= nil
-        local waist = isR15 and char.UpperTorso:FindFirstChild("Waist") or root:FindFirstChild("RootJoint")
-        local origWaist = waist and waist.C0
-        
-        conns.hump = RS.Heartbeat:Connect(function()
-            if not states.hump or not selected then
-                if waist and origWaist then waist.C0 = origWaist end
+        local w = c:FindFirstChild("UpperTorso") and c.UpperTorso:FindFirstChild("Waist") or r:FindFirstChild("RootJoint")
+        local ow = w and w.C0
+        cn.hm = game:GetService("RunService").Heartbeat:Connect(function()
+            if not st.hm or not sel then
+                if w and ow then w.C0 = ow end
                 return
             end
-            
-            if selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
-                local tr = selected.Character.HumanoidRootPart
+            if sel.Character and sel.Character:FindFirstChild("HumanoidRootPart") then
+                local tr = sel.Character.HumanoidRootPart
                 local t = tick()
-                local thrust = math.sin(t * 10)
-                local off = thrust * 1.5
-                
-                root.CFrame = tr.CFrame * CFrame.new(0, 0, 2 + off) * CFrame.Angles(math.rad(10), 0, 0)
-                
-                if waist and origWaist then
-                    waist.C0 = origWaist * CFrame.Angles(math.rad(thrust * 20), 0, 0)
+                local th = math.sin(t * 10)
+                r.CFrame = tr.CFrame * CFrame.new(0, 0, 2 + th * 1.5) * CFrame.Angles(math.rad(10), 0, 0)
+                if w and ow then
+                    w.C0 = ow * CFrame.Angles(math.rad(th * 20), 0, 0)
                 end
             end
         end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
-        print("😈 Humping " .. selected.Name)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.hump then conns.hump:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.hm then cn.hm:Disconnect() end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
--- TP TO SELECTED
-btn("TP to Selected", "📍", 7, function(s, st)
-    if selected and selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
-        root.CFrame = selected.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-        print("✅ Teleported to " .. selected.Name)
-    else
-        print("⚠️ Select a player first!")
+-- TP
+btn("TP TO", "TP", function(b)
+    if sel and sel.Character and sel.Character:FindFirstChild("HumanoidRootPart") then
+        r.CFrame = sel.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
     end
 end)
 
 -- FOLLOW
-btn("Follow Selected", "🎯", 8, function(s, st)
-    states.follow = not states.follow
-    
-    if states.follow then
-        if not selected then
-            states.follow = false
-            print("⚠️ Select a player first!")
+btn("FOLLOW", "Follow", function(b)
+    st.fw = not st.fw
+    if st.fw then
+        if not sel then
+            st.fw = false
             return
         end
-        
-        conns.follow = RS.Heartbeat:Connect(function()
-            if not states.follow or not selected then return end
-            if selected.Character and selected.Character:FindFirstChild("HumanoidRootPart") then
-                root.CFrame = selected.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+        cn.fw = game:GetService("RunService").Heartbeat:Connect(function()
+            if sel and sel.Character and sel.Character:FindFirstChild("HumanoidRootPart") then
+                r.CFrame = sel.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
             end
         end)
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
-        print("🎯 Following " .. selected.Name)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.follow then conns.follow:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.fw then cn.fw:Disconnect() end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- FLING
-btn("FLING (Spin)", "💥", 9, function(s, st)
-    states.fling = not states.fling
-    
-    if states.fling then
-        local spin = Instance.new("BodyAngularVelocity")
-        spin.Name = "Spin"
-        spin.MaxTorque = Vector3.new(0, 9e9, 0)
-        spin.AngularVelocity = Vector3.new(0, 100, 0)
-        spin.P = 5000
-        spin.Parent = root
-        
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
-        print("💥 FLING MODE!")
+btn("FLING", "Fling", function(b)
+    st.fl = not st.fl
+    if st.fl then
+        local sp = Instance.new("BodyAngularVelocity", r)
+        sp.MaxTorque = Vector3.new(0, 9e9, 0)
+        sp.AngularVelocity = Vector3.new(0, 100, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if root:FindFirstChild("Spin") then root.Spin:Destroy() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        for _, o in pairs(r:GetChildren()) do
+            if o:IsA("BodyAngularVelocity") then o:Destroy() end
+        end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- SPIN
-btn("Spin Character", "🌀", 10, function(s, st)
-    states.spin = not states.spin
-    
-    if states.spin then
-        conns.spin = RS.Heartbeat:Connect(function()
-            if states.spin then
-                root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(15), 0)
-            end
+btn("SPIN", "Spin", function(b)
+    st.sn = not st.sn
+    if st.sn then
+        cn.sn = game:GetService("RunService").Heartbeat:Connect(function()
+            r.CFrame = r.CFrame * CFrame.Angles(0, math.rad(15), 0)
         end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if conns.spin then conns.spin:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
-end)
-
--- SEIZURE
-btn("Seizure Mode", "📳", 11, function(s, st)
-    states.seizure = not states.seizure
-    
-    if states.seizure then
-        conns.seizure = RS.Heartbeat:Connect(function()
-            if states.seizure then
-                root.CFrame = root.CFrame * CFrame.new(
-                    math.random(-1, 1) * 0.5,
-                    math.random(-1, 1) * 0.5,
-                    math.random(-1, 1) * 0.5
-                )
-            end
-        end)
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
-    else
-        if conns.seizure then conns.seizure:Disconnect() end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        if cn.sn then cn.sn:Disconnect() end
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
 -- HEADLESS
-btn("Headless", "👤", 12, function(s, st)
-    states.headless = not states.headless
-    
-    if states.headless and char:FindFirstChild("Head") then
-        char.Head.Transparency = 1
-        if char.Head:FindFirstChild("face") then
-            char.Head.face.Transparency = 1
+btn("HEADLESS", "Headless", function(b)
+    st.hl = not st.hl
+    if st.hl and c:FindFirstChild("Head") then
+        c.Head.Transparency = 1
+        if c.Head:FindFirstChild("face") then
+            c.Head.face.Transparency = 1
         end
-        st.Text = "ON"
-        s.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        st.TextColor3 = Color3.fromRGB(0, 0, 0)
+        b.BackgroundColor3 = Color3.new(1, 0, 0)
     else
-        if char:FindFirstChild("Head") then
-            char.Head.Transparency = 0
-            if char.Head:FindFirstChild("face") then
-                char.Head.face.Transparency = 0
+        if c:FindFirstChild("Head") then
+            c.Head.Transparency = 0
+            if c.Head:FindFirstChild("face") then
+                c.Head.face.Transparency = 0
             end
         end
-        st.Text = "OFF"
-        s.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-        st.TextColor3 = Color3.fromRGB(200, 200, 200)
+        b.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
     end
 end)
 
-print("💀═══════════════════════════════════════════")
-print("║  MATTHEW HIPPO LOADED!                    ║")
-print("║  12 Features Ready!                       ║")
-print("║  😈 Realistic Hip Thrusting Hump!        ║")
-print("║  Made by Skinny Nicolas                   ║")
-print("💀═══════════════════════════════════════════")
+print("LOADED! Matthew Hippo ready!")
