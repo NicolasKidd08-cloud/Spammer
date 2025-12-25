@@ -1,0 +1,123 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Gui = script.Parent  -- Assuming this script is under the ScreenGui
+
+-- Create the main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MainFrame.Parent = Gui
+
+-- Title Label
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 50)
+Title.Text = "Player Bring Tool"
+Title.TextSize = 24
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Parent = MainFrame
+
+-- ScrollingFrame for player list
+local PlayerList = Instance.new("ScrollingFrame")
+PlayerList.Size = UDim2.new(1, 0, 1, -150)
+PlayerList.Position = UDim2.new(0, 0, 0, 50)
+PlayerList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PlayerList.Parent = MainFrame
+
+-- UIListLayout for player buttons
+local ListLayout = Instance.new("UIListLayout")
+ListLayout.Parent = PlayerList
+ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+ListLayout.Padding = UDim.new(0, 5)
+
+-- Selected player variable
+local SelectedPlayer = nil
+
+-- Function to populate player list
+local function PopulatePlayers()
+    for _, child in ipairs(PlayerList:GetChildren()) do
+        if child:IsA("TextButton") then
+            child:Destroy()
+        end
+    end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then  -- Exclude self
+            local Button = Instance.new("TextButton")
+            Button.Size = UDim2.new(1, 0, 0, 30)
+            Button.Text = player.Name
+            Button.TextSize = 18
+            Button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Button.Parent = PlayerList
+            
+            Button.MouseButton1Click:Connect(function()
+                SelectedPlayer = player
+                -- Highlight selected (basic visual feedback)
+                for _, btn in ipairs(PlayerList:GetChildren()) do
+                    if btn:IsA("TextButton") then
+                        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+                    end
+                end
+                Button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+            end)
+        end
+    end
+end
+
+-- Initial population and refresh on player added/removed
+PopulatePlayers()
+Players.PlayerAdded:Connect(PopulatePlayers)
+Players.PlayerRemoving:Connect(PopulatePlayers)
+
+-- Bring Selected Button
+local BringButton = Instance.new("TextButton")
+BringButton.Size = UDim2.new(0.5, 0, 0, 50)
+BringButton.Position = UDim2.new(0, 0, 1, -100)
+BringButton.Text = "Bring Selected"
+BringButton.TextSize = 20
+BringButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+BringButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BringButton.Parent = MainFrame
+
+BringButton.MouseButton1Click:Connect(function()
+    if SelectedPlayer and SelectedPlayer.Character then
+        local targetPos = LocalPlayer.Character.HumanoidRootPart.Position
+        SelectedPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 0, 5))  -- Bring near you
+        -- Note: This is client-side; in a real game, this would be detected as exploit unless server allows it.
+    end
+end)
+
+-- Bring All Button
+local BringAllButton = Instance.new("TextButton")
+BringAllButton.Size = UDim2.new(0.5, 0, 0, 50)
+BringAllButton.Position = UDim2.new(0.5, 0, 1, -100)
+BringAllButton.Text = "Bring All"
+BringAllButton.TextSize = 20
+BringAllButton.BackgroundColor3 = Color3.fromRGB(120, 0, 0)
+BringAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+BringAllButton.Parent = MainFrame
+
+BringAllButton.MouseButton1Click:Connect(function()
+    local targetPos = LocalPlayer.Character.HumanoidRootPart.Position
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(math.random(-5,5), 0, math.random(-5,5)))
+        end
+    end
+end)
+
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.Text = "X"
+CloseButton.TextSize = 18
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Parent = MainFrame
+
+CloseButton.MouseButton1Click:Connect(function()
+    Gui.Enabled = false
+end)
